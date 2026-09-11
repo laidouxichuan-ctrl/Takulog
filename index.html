@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>卓ログ</title>
+<style>
+*{box-sizing:border-box}
+:root{--blue1:#65b4ff;--blue2:#3187ed;--blue3:#1762c7;--line:#e5e9f0;--text:#202630;--muted:#7b8592;--bg:#f7f9fc}
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;background:var(--bg);color:var(--text)}
+.app{min-height:100vh}
+.sidebar{position:fixed;inset:0 auto 0 0;width:250px;background:#fff;border-right:1px solid var(--line);z-index:10;transition:.22s;box-shadow:2px 0 12px #24466d0b}
+.sidebar.collapsed{width:72px}
+.brand{height:74px;display:flex;align-items:center;gap:12px;padding:0 17px;border-bottom:1px solid var(--line);overflow:hidden}
+.die{width:41px;height:41px;flex:none;display:grid;place-items:center;color:#fff;font-size:14px;font-weight:800;background:linear-gradient(145deg,var(--blue1),var(--blue3));clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)}
+.brand-name{font-size:19px;font-weight:800;white-space:nowrap}
+.toggle{position:absolute;right:-14px;top:29px;width:28px;height:28px;border:1px solid #d9e1eb;border-radius:50%;background:#fff;color:#596675;box-shadow:0 2px 8px #0001;cursor:pointer}
+.sidebar.collapsed .brand-name,.sidebar.collapsed .label{display:none}
+.sidebar.collapsed .nav button{justify-content:center;padding:0}
+.sidebar.collapsed .toggle{transform:rotate(180deg)}
+.nav{padding:14px 10px;display:flex;flex-direction:column;gap:5px}
+.nav button{width:100%;min-height:45px;border:0;border-radius:9px;background:transparent;color:#4f5967;display:flex;align-items:center;gap:12px;padding:0 12px;text-align:left;font:inherit;cursor:pointer}
+.nav button:hover{background:#f2f6fb}
+.nav button.active{background:linear-gradient(100deg,#edf6ff,#e4f0ff);color:#1765c5;font-weight:700}
+.icon{width:25px;flex:none;text-align:center;font-size:18px}.label{white-space:nowrap;overflow:hidden}
+.main{margin-left:250px;min-height:100vh;transition:.22s}
+.sidebar.collapsed~.main{margin-left:72px}
+.topbar{height:74px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 30px}
+.page-title{font-size:21px;font-weight:750}
+.content{max-width:1180px;margin:auto;padding:28px 26px 40px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 18px #22466e0b}
+.primary{width:100%;min-height:56px;border:0;border-radius:10px;color:#fff;font:inherit;font-weight:700;font-size:16px;background:linear-gradient(110deg,var(--blue1),var(--blue2) 55%,var(--blue3));box-shadow:0 5px 13px #2878e833;cursor:pointer}
+.primary:hover{filter:brightness(1.03);transform:translateY(-1px)}
+.create{padding:18px;margin-bottom:22px}
+.calendar-card{padding:18px;margin-bottom:22px}
+.section-title{margin:0 0 14px;font-size:18px;font-weight:750}
+.calendar-head{display:flex;justify-content:space-between;align-items:center}
+
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--line);border-top:1px solid var(--line)}
+.weekday,.day{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px}
+.weekday{background:#f8fafc;text-align:center;font-size:12px;font-weight:700;color:#697484}
+.day{height:76px;background:#fff;position:relative;font-size:13px}
+.day.muted{background:#fbfcfd;color:#c6ccd4}
+.day.today{background:#eef6ff}
+.num{font-weight:700}
+.day.today .num{display:inline-grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#3187ed;color:#fff}
+.day.sun .num{color:#df6b76}.day.sat .num{color:#4d87ce}.day.today .num{color:#fff}
+.recruit{padding:18px}
+.empty{font-size:14px;color:var(--muted)}
+.footer{text-align:center;padding:18px 0 4px;color:#89929d;font-size:11px}
+.footer button{border:0;background:none;color:#707a86;text-decoration:underline;padding:2px 7px;font-size:11px;cursor:pointer}
+.modal-backdrop{display:none;position:fixed;inset:0;background:#14203066;z-index:50;padding:20px}
+.modal-backdrop.open{display:grid;place-items:center}
+.modal{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:15px;box-shadow:0 20px 60px #0003}
+.modal-head{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.modal-head h2{margin:0;font-size:18px}
+.close{border:0;background:#f2f4f7;border-radius:50%;width:34px;height:34px;color:#66717f;font-size:18px;cursor:pointer}
+.modal-body{padding:20px;font-size:14px;line-height:1.8}.modal-body .p1{margin:0 0 12px;font-size:18px;font-weight:700}.modal-body .p2{margin:0 0 7px;font-size:23px;font-weight:700}.modal-body .p3{margin:0 0 9px;font-size:14px}.modal-body .s1,.modal-body .s2{font-weight:700}
+.modal-foot{padding:13px 20px;border-top:1px solid var(--line);text-align:right}
+.modal-foot button{border:0;border-radius:8px;background:#eef3f8;padding:9px 16px;cursor:pointer}
+@media(max-width:700px){
+.sidebar{width:72px}.sidebar .brand-name,.sidebar .label{display:none}.nav button{justify-content:center;padding:0}
+.main{margin-left:72px}.topbar{padding:0 16px}.content{padding:18px 12px 30px}
+.day{height:60px;padding:6px 4px}
+}
+
+/* チャットパレット生成 */
+.palette-page{padding:22px;margin-bottom:22px}
+.palette-intro{margin-bottom:20px}
+.palette-intro .section-title{margin-bottom:6px}
+.palette-intro p{margin:0;color:var(--muted);font-size:13px;line-height:1.7}
+.palette-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.field-card{border:1px solid var(--line);border-radius:11px;background:#fbfcfe;padding:15px}
+.field-card label{display:block;margin-bottom:8px;font-size:13px;font-weight:700;color:#4f5967}
+.field-card label span{font-weight:800;color:#3187ed}
+.field-card input{width:100%;height:45px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;padding:0 12px;color:var(--text);font:inherit;outline:none;transition:.15s}
+.field-card input::placeholder{color:#b5bdc8}
+.field-card input:focus{border-color:#65b4ff;box-shadow:0 0 0 3px #65b4ff22}
+.output-choice{margin-top:18px;padding:15px;border:1px solid var(--line);border-radius:11px;display:flex;align-items:center;justify-content:space-between;gap:15px;background:#f8fafc}
+.output-title{font-weight:750;font-size:14px}
+.output-help{font-size:12px;color:var(--muted);margin-top:3px}
+.palette-button{width:150px;min-height:45px;font-size:14px}
+.result-card{margin-top:16px;min-height:90px;border:1px solid var(--line);border-radius:11px;background:#fff;padding:15px;white-space:pre-wrap;word-break:break-word}
+.result-empty{color:#a3acb8;font-size:13px}
+.result-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans JP",monospace;font-size:14px;line-height:1.8;color:#202630}
+.copy-button{display:block;margin:10px 0 0 auto;border:0;border-radius:8px;background:#eef3f8;color:#596675;padding:9px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.copy-button:hover{background:#e5edf6}
+@media(max-width:700px){
+ .palette-grid{grid-template-columns:1fr}
+ .output-choice{align-items:stretch;flex-direction:column}
+ .palette-button{width:100%}
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="brand"><div class="die">100</div><div class="brand-name">卓ログ</div></div>
+<button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
+<nav class="nav">
+<button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
+<button data-page="シナリオ予定作成" onclick="placeholder(this)"><span class="icon">＋</span><span class="label">シナリオ予定作成</span></button>
+<button data-page="予定作成済みシナリオ" onclick="placeholder(this)"><span class="icon">▣</span><span class="label">予定作成済みシナリオ</span></button>
+<button data-page="参加希望済みシナリオ" onclick="placeholder(this)"><span class="icon">☆</span><span class="label">参加希望済みシナリオ</span></button>
+<button data-page="プレイ済みシナリオ" onclick="placeholder(this)"><span class="icon">✓</span><span class="label">プレイ済みシナリオ</span></button>
+<button data-page="チャットパレット生成" onclick="chatPalette(this)"><span class="icon">▤</span><span class="label">チャットパレット生成</span></button>
+<button data-page="デイコード" onclick="placeholder(this)"><span class="icon">▦</span><span class="label">デイコード</span></button>
+</nav>
+</aside>
+
+<main class="main">
+<header class="topbar"><div class="page-title" id="pageTitle">ホーム</div></header>
+<div class="content">
+<section class="card create"><button class="primary" onclick="placeholder(document.querySelector('[data-page=&quot;シナリオ予定作成&quot;]'))">＋　シナリオ予定を作成</button></section>
+
+<section class="card calendar-card">
+<div class="calendar-head"><h2 class="section-title">カレンダー</h2></div>
+<div class="calendar" id="calendar"></div>
+</section>
+
+<section class="card recruit" id="homeRecruit">
+<h2 class="section-title">参加者募集中シナリオ</h2>
+<div class="empty">現在、参加者を募集中のシナリオはありません。</div>
+</section>
+
+
+
+<section class="card palette-page" id="chatPaletteOutputPage" style="display:none">
+  <div class="palette-intro">
+    <h2 class="section-title">チャットパレット出力</h2>
+    <p>いあきゃらからコピーしたチャットパレットを読み取り、卓ログで使用するチャットパレットを生成します。</p>
+  </div>
+  <div class="field-card">
+    <label for="officialInput">① いあきゃらのチャットパレット</label>
+    <textarea id="officialInput" style="width:100%;min-height:220px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical" placeholder="いあきゃらからコピーして貼り付け"></textarea>
+    <button class="primary palette-button" id="officialRead" onclick="officialReadSkills()">読み取り</button>
+    <button class="copy-button" style="display:inline-block;margin:8px 0 0 0" onclick="officialClear()">クリア</button>
+    <p id="officialStatus"></p>
+  </div>
+  <div class="field-card" style="margin-top:14px">
+    <label>② 読み取り結果</label>
+    <p id="officialCount"></p>
+    <div id="officialSkills">まだ読み取っていません。</div>
+  </div>
+  <div class="field-card" style="margin-top:14px">
+    <label>③ 生成結果</label>
+    <button class="primary palette-button" onclick="officialGenerate()">チャットパレットを生成</button>
+    <textarea id="officialResult" readonly style="width:100%;min-height:350px;margin-top:12px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical"></textarea>
+    <button class="copy-button" onclick="officialCopy()">コピー</button>
+    <p id="officialCopyStatus"></p>
+  </div>
+</section>
+
+<section class="card palette-page" id="palettePage" style="display:none">
+  <div class="palette-intro">
+    <h2 class="section-title">オリジナル技能作成</h2>
+    <p>いあきゃらで出力しきれない技能などを、チャットパレット用の形式で作成できます。</p>
+  </div>
+
+  <div class="palette-grid">
+    <div class="field-card">
+      <label for="successValue">成功値 <span>◯</span></label>
+      <input id="successValue" type="text" placeholder="5" autocomplete="off">
+    </div>
+    <div class="field-card">
+      <label for="skillName">技能の名前 <span>□</span></label>
+      <input id="skillName" type="text" placeholder="医学" autocomplete="off">
+    </div>
+    <div class="field-card">
+      <label for="diceValue">使用するダイス <span>△</span></label>
+      <input id="diceValue" type="text" placeholder="2D3" autocomplete="off">
+    </div>
+    <div class="field-card">
+      <label for="featureName">技能の名前と特徴 <span>◎</span></label>
+      <input id="featureName" type="text" placeholder="医学回復" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="output-choice">
+    <div>
+      <div class="output-title">出力内容</div>
+      <div class="output-help">入力済みの項目だけを組み合わせて出力します。</div>
+    </div>
+    <button class="primary palette-button" onclick="generatePalette()">出力</button>
+  </div>
+
+  <div class="result-card" id="paletteResult" aria-live="polite">
+    <div class="result-empty">ここにチャットパレットが表示されます。</div>
+  </div>
+  <button class="copy-button" id="copyButton" onclick="copyPalette()" style="display:none">コピー</button>
+</section>
+
+<footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
+</div>
+</main>
+</div>
+
+<div class="modal-backdrop" id="modal" onclick="backdrop(event)">
+<div class="modal">
+<div class="modal-head"><h2 id="modalTitle"></h2><button class="close" onclick="closeLegal()">×</button></div>
+<div class="modal-body" id="modalBody"></div>
+<div class="modal-foot"><button onclick="closeLegal()">閉じる</button></div>
+</div>
+</div>
+
+<script>
+const legal={
+terms:{title:"利用規約",body:'<p class="p1"><span class="s1">利用規約</span></p><p class="p2"><span class="s2">第1条（本サービスについて）</span></p><p class="p3"><span class="s3">「卓ログ」は、TRPG等のシナリオについて、募集、参加希望、参加者管理、キャラクター情報の管理および開催可能日の確認等を行うためのサービスです。</span></p><p class="p3"><span class="s3">本サービスでは、特定のユーザーを固定的に「GM」または「PL」として扱わず、シナリオごとに作成者または参加者として利用します。</span></p><p class="p2"><span class="s2">第2条（Discordアカウントによるログイン）</span></p><p class="p3"><span class="s3">本サービスではDiscordのアカウントを利用した認証を行います。ログイン時にDiscordから取得したユーザー情報を、本サービスにおけるユーザーの識別および表示のために利用します。</span></p><p class="p2"><span class="s2">第3条（ユーザーの責任）</span></p><p class="p3"><span class="s3">ユーザーは、他のユーザーへのなりすまし、不正アクセス、虚偽情報の登録、サービス運営の妨害、他のユーザーへの迷惑行為、法令または公序良俗に反する行為を行ってはいけません。</span></p><p class="p2"><span class="s2">第4条（シナリオおよびキャラクター情報）</span></p><p class="p3"><span class="s3">ユーザーが登録するシナリオ情報、キャラクター名、キャラクターシートへのリンク、コメント等については、ユーザー自身が責任をもって登録してください。外部サービスを利用する場合は、そのサービスの利用規約等にも従ってください。</span></p><p class="p2"><span class="s2">第5条（シナリオの管理）</span></p><p class="p3"><span class="s3">シナリオ作成者には、そのシナリオに関する管理権限が付与されます。作成者は参加者の参加を取り消すことができます。参加者自身や他の参加者は、他人の参加を取り消すことはできません。</span></p><p class="p2"><span class="s2">第6条（サービスの変更・停止）</span></p><p class="p3"><span class="s3">運営者は、保守、障害、セキュリティ上の理由、外部サービスの仕様変更その他必要と判断した場合、本サービスの全部または一部を変更、停止または終了することがあります。</span></p><p class="p2"><span class="s2">第7条（免責事項）</span></p><p class="p3"><span class="s3">運営者は、本サービスの完全性、正確性、継続性または特定目的への適合性を保証するものではありません。外部サービス等の事情により機能が利用できなくなる場合があります。</span></p><p class="p2"><span class="s2">第8条（利用規約の変更）</span></p><p class="p3"><span class="s3">運営者は必要に応じて本規約を変更することがあります。変更後の規約は、本サービス上で公開した時点または別途定めた時点から効力を生じます。</span></p><p class="p2"><span class="s2">第9条（準拠法）</span></p><p class="p3"><span class="s3">本規約は日本法に準拠して解釈されます。</span></p><p class="p2"><span class="s2">第10条（お問い合わせ）</span></p><p class="p3"><span class="s3">お問い合わせ：umineko／laidouxichuan@gmail.com</span></p>'},
+privacy:{title:"プライバシーポリシー",body:'<p class="p1"><span class="s1">プライバシーポリシー</span></p><p class="p2"><span class="s2">1. 取得する情報</span></p><p class="p3"><span class="s3">Discordによるログインに伴い、Discord User ID、Discordユーザー名・表示名等のアカウント情報を取得する場合があります。また、シナリオ名、概要、使用システム、定員、キャラクター名、キャラクターシートURL、コメント、参加情報、通知の確認状況等を取り扱います。</span></p><p class="p2"><span class="s2">2. 利用目的</span></p><p class="p3"><span class="s3">取得した情報は、ログインおよびユーザー識別、シナリオの作成・管理、参加管理、キャラクター情報の表示、開催可能日の確認、更新情報・通知の提供、既読・未読状態の管理、本サービスの運営・改善、不正利用や不具合への対応のために利用します。</span></p><p class="p2"><span class="s2">3. Discordについて</span></p><p class="p3"><span class="s3">本サービスではユーザー認証のためDiscordのOAuth2認証機能を利用します。Discordのサービスについては、Discord側の利用規約およびプライバシーポリシーも適用されます。</span></p><p class="p2"><span class="s2">4. 第三者提供</span></p><p class="p3"><span class="s3">運営者は、法令に基づく場合等を除き、ユーザーの情報を本人の同意なく第三者へ提供しません。ただし、本サービスの提供に必要な外部サービスを利用する場合、そのサービスに必要な範囲で情報が取り扱われることがあります。</span></p><p class="p2"><span class="s2">5. 情報の管理</span></p><p class="p3"><span class="s3">運営者は、取得した情報について、不正アクセス、紛失、漏えい等を防止するため、適切な管理に努めます。</span></p><p class="p2"><span class="s2">6. ユーザーによる情報の変更</span></p><p class="p3"><span class="s3">ユーザーが登録したキャラクター情報等は、本サービスが提供する機能の範囲内で変更できます。Discordアカウントに由来するユーザー識別情報は、本サービス上から変更できない場合があります。</span></p><p class="p2"><span class="s2">7. 情報の削除</span></p><p class="p3"><span class="s3">ユーザーから自身の情報の削除等について申し出があった場合、本人確認等を行ったうえで、可能な範囲で対応します。</span></p><p class="p2"><span class="s2">8. ポリシーの変更</span></p><p class="p3"><span class="s3">運営者は必要に応じて本プライバシーポリシーを変更することがあります。変更後のポリシーは、本サービス上で公開した時点または別途定めた時点から効力を生じます。</span></p><p class="p2"><span class="s2">9. お問い合わせ</span></p><p class="p3"><span class="s3">お問い合わせ：umineko／laidouxichuan@gmail.com</span></p>'}
+};
+function toggleSidebar(){document.getElementById("sidebar").classList.toggle("collapsed")}
+function home(btn){
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("pageTitle").textContent="ホーム";
+  document.getElementById("chatPaletteOutputPage").style.display="none";
+  document.getElementById("palettePage").style.display="none";
+  document.getElementById("homeRecruit").style.display="block";
+  document.querySelector(".create").style.display="block";
+  document.querySelector(".calendar-card").style.display="block";
+}
+function placeholder(btn){
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("pageTitle").textContent=btn.dataset.page;
+  document.getElementById("chatPaletteOutputPage").style.display="none";
+  document.getElementById("palettePage").style.display="none";
+  document.getElementById("homeRecruit").style.display="block";
+  document.querySelector(".create").style.display="block";
+  document.querySelector(".calendar-card").style.display="block";
+  alert(btn.dataset.page+" は現在、機能を実装していません。\nページ構成のみ用意しています。");
+}
+function openLegal(type){document.getElementById("modalTitle").textContent=legal[type].title;document.getElementById("modalBody").innerHTML=legal[type].body;document.getElementById("modal").classList.add("open")}
+function closeLegal(){document.getElementById("modal").classList.remove("open")}
+function backdrop(e){if(e.target.id==="modal")closeLegal()}
+
+
+function chatPalette(btn){
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("pageTitle").textContent="チャットパレット生成";
+  document.getElementById("chatPaletteOutputPage").style.display="block";
+  document.getElementById("palettePage").style.display="block";
+  document.getElementById("homeRecruit").style.display="none";
+  document.querySelector(".create").style.display="none";
+  document.querySelector(".calendar-card").style.display="none";
+}
+
+function generatePalette(){
+  const success=document.getElementById("successValue").value.trim();
+  const skill=document.getElementById("skillName").value.trim();
+  const dice=document.getElementById("diceValue").value.trim();
+  const feature=document.getElementById("featureName").value.trim();
+  const result=document.getElementById("paletteResult");
+  const copy=document.getElementById("copyButton");
+  const lines=[];
+
+  // ◯＋□ が揃っている場合
+  if(success && skill){
+    lines.push(`CCB<=${success} 【${skill}】`);
+  }
+  // △＋◎ が揃っている場合
+  if(dice && feature){
+    lines.push(`${dice} 【${feature}】`);
+  }
+
+  if(lines.length===0){
+    result.innerHTML='<div class="result-empty">◯＋□、△＋◎のいずれかを入力してから出力してください。</div>';
+    copy.style.display="none";
+    return;
+  }
+
+  result.innerHTML='<p class="result-text" id="resultText"></p>';
+  document.getElementById("resultText").textContent=lines.join("\n");
+  copy.style.display="block";
+}
+
+async function copyPalette(){
+  const text=document.getElementById("resultText")?.textContent || "";
+  if(!text)return;
+  try{
+    await navigator.clipboard.writeText(text);
+    const btn=document.getElementById("copyButton");
+    const old=btn.textContent;
+    btn.textContent="コピーしました";
+    setTimeout(()=>btn.textContent=old,1200);
+  }catch(e){
+    alert("コピーできませんでした。出力内容を選択してコピーしてください。");
+  }
+}
+
+
+const OFFICIAL_TEMPLATE = `1D100<={SAN} 【SAN値チェック】
+1D100<=5*{CON} 【ショックロール】
+1D100<=5*{STR} 【STR×5】
+1D100<=5*{CON} 【CON×5】
+1D100<=5*{POW} 【POW×5】
+1D100<=5*{DEX} 【DEX×5】
+RES({STR}-0) 【STR対抗ロール】
+RES({CON}-0) 【CON対抗ロール】
+RES({POW}-0) 【POW対抗ロール】
+RES({DEX}-0) 【DEX対抗ロール】
+RES({INT}-0) 【INT対抗ロール】
+RES({EDU}-0) 【EDU対抗ロール】
+CCB<=5*{INT} 【アイデア】
+CCB<=5*{POW} 【幸運】
+CCB<=5*{EDU} 【知識】
+CCB<=2*{DEX} 【回避】
+CCB<=25 【キック】
+1D6+{DB} 【キックダメージ】
+CCB<=1 【マーシャルアーツ】
+2D6+{DB} 【マーシャルキックダメージ】
+CCB<=25 【組み付き】
+CCB<=50 【こぶし（パンチ）】
+1D3+{DB} 【こぶしダメージ】
+CCB<=1 【マーシャルアーツ】
+2D3+{DB} 【マーシャルパンチダメージ】
+CCB<=10 【頭突き】
+1D4+{DB} 【頭突きダメージ】
+CCB<=25 【投擲】
+CCB<=20 【拳銃】
+1D8 【拳銃ダメージ】
+CCB<=15 【サブマシンガン】
+1D10+2 【サブマシンダメージ】
+CCB<=30 【ショットガン】
+4D6 【ショットガンダメージ】
+CCB<=15 【マシンガン】
+2D6+4 【マシンダメージ】
+CCB<=25 【ライフル】
+2D6 【ライフルダメージ】
+CCB<=30 【応急手当】
+1D3 【応急手当回復】
+CCB<=1 【鍵開け】
+CCB<=15 【隠す】
+CCB<=10 【隠れる】
+CCB<=25 【聞き耳】
+CCB<=10 【忍び歩き】
+CCB<=10 【写真術】
+CCB<=1 【精神分析】
+1D2 【精神分析回復】
+CCB<=10 【追跡】
+CCB<=40 【登攀】
+CCB<=25 【図書館】
+CCB<=25 【目星】
+CCB<=20 【運転】
+CCB<=20 【機械修理】
+CCB<=1 【重機械操作】
+CCB<=5 【乗馬】
+CCB<=25 【水泳】
+CCB<=5 【製作】
+CCB<=1 【操縦】
+CCB<=25 【跳躍】
+CCB<=10 【電気修理】
+CCB<=10 【ナビゲート】
+CCB<=1 【変装】
+CCB<=5 【言いくるめ】
+CCB<=15 【信用】
+CCB<=15 【説得】
+CCB<=5 【値切り】
+CCB<=5*{EDU} 【母国語】
+CCB<=5 【医学】
+2D3 【医学回復】
+CCB<=5 【オカルト】
+CCB<=1 【化学】
+CCB<=0 【クトゥルフ神話】
+CCB<=5 【芸術】
+CCB<=10 【経理】
+CCB<=1 【考古学】
+CCB<=1 【コンピューター】
+CCB<=5 【心理学】
+CCB<=1 【人類学】
+CCB<=1 【生物学】
+CCB<=1 【地質学】
+CCB<=1 【電子工学】
+CCB<=1 【天文学】
+CCB<=10 【博物学】
+CCB<=1 【物理学】
+CCB<=5 【法律】
+CCB<=1 【薬学】
+CCB<=20 【歴史}`;
+
+let officialSkills = new Map();
+
+function officialIgnored(name){
+  if(["正気度ロール","SAN値チェック","ダメージ判定"].includes(name)) return true;
+  return /^(STR|CON|POW|DEX|APP|SIZ|INT|EDU)\s*[×x＊*]\s*5$/i.test(name);
+}
+function officialEscape(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function officialReadSkills(){
+  officialSkills=new Map();
+  const lines=document.getElementById("officialInput").value.replace(/\r\n?/g,"\n").split("\n");
+  for(const line0 of lines){
+    const line=line0.trim();
+    const m=line.match(/^CCB\s*<=\s*(\d+)\s*【([^】]+)】\s*$/i);
+    if(!m) continue;
+    const name=m[2].trim();
+    if(officialIgnored(name)) continue;
+    officialSkills.set(name,Number(m[1]));
+  }
+  document.getElementById("officialCount").textContent=officialSkills.size+"件";
+  document.getElementById("officialSkills").innerHTML=officialSkills.size
+    ? "<table><tr><th>技能名</th><th>技能値</th></tr>"+[...officialSkills].map(([n,v])=>"<tr><td>"+officialEscape(n)+"</td><td>"+v+"</td></tr>").join("")+"</table>"
+    : "認識できる技能がありません。";
+  document.getElementById("officialResult").value="";
+  document.getElementById("officialStatus").textContent=officialSkills.size+"件の技能を読み取りました。";
+}
+function officialMake(){
+  const used=new Set();
+  const lines=OFFICIAL_TEMPLATE.split("\n").map(line=>{
+    const m=line.match(/【([^】]+)】/);
+    if(!m || !officialSkills.has(m[1])) return line;
+    const name=m[1];
+    used.add(name);
+    if(["アイデア","幸運","知識","母国語"].includes(name)) return line;
+    return /^CCB\s*<=\s*\d+/i.test(line)
+      ? line.replace(/^CCB\s*<=\s*\d+/i,"CCB<="+officialSkills.get(name))
+      : line;
+  });
+  for(const [n,v] of officialSkills) if(!used.has(n)) lines.push("CCB<="+v+" 【"+n+"】");
+  return lines.join("\n");
+}
+function officialGenerate(){
+  if(!officialSkills.size) officialReadSkills();
+  if(officialSkills.size) document.getElementById("officialResult").value=officialMake();
+}
+function officialClear(){
+  officialSkills=new Map();
+  document.getElementById("officialInput").value="";
+  document.getElementById("officialResult").value="";
+  document.getElementById("officialCount").textContent="";
+  document.getElementById("officialSkills").textContent="まだ読み取っていません。";
+  document.getElementById("officialStatus").textContent="";
+  document.getElementById("officialCopyStatus").textContent="";
+}
+async function officialCopy(){
+  const text=document.getElementById("officialResult").value;
+  if(!text){document.getElementById("officialCopyStatus").textContent="先に生成してください。";return;}
+  try{
+    await navigator.clipboard.writeText(text);
+    document.getElementById("officialCopyStatus").textContent="コピーしました。";
+  }catch(e){
+    const r=document.getElementById("officialResult"); r.focus(); r.select();
+    document.getElementById("officialCopyStatus").textContent="自動コピーできない場合は、選択された文字をコピーしてください。";
+  }
+}
+
+function buildCalendar(){
+ const box=document.getElementById("calendar"),names=["日","月","火","水","木","金","土"];
+ names.forEach(n=>{const x=document.createElement("div");x.className="weekday";x.textContent=n;box.appendChild(x)});
+ const today=new Date();today.setHours(0,0,0,0);
+ const start=new Date(today);start.setDate(today.getDate()-today.getDay());
+ for(let i=0;i<28;i++){
+  const d=new Date(start);d.setDate(start.getDate()+i);
+  const x=document.createElement("div");x.className="day";
+  if(d.getMonth()!=today.getMonth())x.classList.add("muted");
+  if(d.getTime()==today.getTime())x.classList.add("today");
+  if(d.getDay()==0)x.classList.add("sun"); if(d.getDay()==6)x.classList.add("sat");
+  x.innerHTML='<span class="num">'+d.getDate()+'</span>';box.appendChild(x);
+ }
+}
+buildCalendar();
+</script>
+</body>
+</html>
