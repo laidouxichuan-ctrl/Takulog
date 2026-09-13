@@ -1,2019 +1,986 @@
-```html
 <!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>卓ログ</title>
-
 <style>
 *{box-sizing:border-box}
-:root{
-  --blue1:#65b4ff;
-  --blue2:#3187ed;
-  --blue3:#1762c7;
-  --line:#e5e9f0;
-  --text:#202630;
-  --muted:#7b8592;
-  --bg:#f7f9fc
-}
-
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;
-  background:var(--bg);
-  color:var(--text)
-}
-
+:root{--blue1:#65b4ff;--blue2:#3187ed;--blue3:#1762c7;--line:#e5e9f0;--text:#202630;--muted:#7b8592;--bg:#f7f9fc}
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;background:var(--bg);color:var(--text)}
 .app{min-height:100vh}
-
-.sidebar{
-  position:fixed;
-  inset:0 auto 0 0;
-  width:250px;
-  background:#fff;
-  border-right:1px solid var(--line);
-  z-index:10;
-  transition:.22s;
-  box-shadow:2px 0 12px #24466d0b;
-  display:flex;
-  flex-direction:column
-}
-
+.sidebar{position:fixed;display:flex;flex-direction:column;inset:0 auto 0 0;width:250px;background:#fff;border-right:1px solid var(--line);z-index:10;transition:.22s;box-shadow:2px 0 12px #24466d0b}
 .sidebar.collapsed{width:72px}
-
-.brand{
-  height:74px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:0 17px;
-  border-bottom:1px solid var(--line);
-  overflow:hidden;
-  flex:none
-}
-
-.die{
-  width:41px;
-  height:41px;
-  flex:none;
-  display:grid;
-  place-items:center;
-  color:#fff;
-  font-size:14px;
-  font-weight:800;
-  background:linear-gradient(145deg,var(--blue1),var(--blue3));
-  clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)
-}
-
-.brand-name{
-  font-size:19px;
-  font-weight:800;
-  white-space:nowrap
-}
-
-.toggle{
-  position:absolute;
-  right:-14px;
-  top:29px;
-  width:28px;
-  height:28px;
-  border:1px solid #d9e1eb;
-  border-radius:50%;
-  background:#fff;
-  color:#596675;
-  box-shadow:0 2px 8px #0001;
-  cursor:pointer
-}
-
-.sidebar.collapsed .brand-name,
-.sidebar.collapsed .label{
-  display:none
-}
-
-.sidebar.collapsed .nav button{
-  justify-content:center;
-  padding:0
-}
-
-.sidebar.collapsed .toggle{
-  transform:rotate(180deg)
-}
-
-.nav{
-  padding:14px 10px;
-  display:flex;
-  flex-direction:column;
-  gap:5px;
-  flex:1
-}
-
-.nav button{
-  width:100%;
-  min-height:45px;
-  border:0;
-  border-radius:9px;
-  background:transparent;
-  color:#4f5967;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:0 12px;
-  text-align:left;
-  font:inherit;
-  cursor:pointer
-}
-
+.brand{height:74px;display:flex;align-items:center;gap:12px;padding:0 17px;border-bottom:1px solid var(--line);overflow:hidden}
+.die{width:41px;height:41px;flex:none;display:grid;place-items:center;color:#fff;font-size:14px;font-weight:800;background:linear-gradient(145deg,var(--blue1),var(--blue3));clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)}
+.brand-name{font-size:19px;font-weight:800;white-space:nowrap}
+.toggle{position:absolute;right:-14px;top:29px;width:28px;height:28px;border:1px solid #d9e1eb;border-radius:50%;background:#fff;color:#596675;box-shadow:0 2px 8px #0001;cursor:pointer}
+.sidebar.collapsed .brand-name,.sidebar.collapsed .label{display:none}
+.sidebar.collapsed .nav button{justify-content:center;padding:0}
+.sidebar.collapsed .toggle{transform:rotate(180deg)}
+.nav{padding:14px 10px;display:flex;flex-direction:column;gap:5px}
+.nav button{width:100%;min-height:45px;border:0;border-radius:9px;background:transparent;color:#4f5967;display:flex;align-items:center;gap:12px;padding:0 12px;text-align:left;font:inherit;cursor:pointer}
 .nav button:hover{background:#f2f6fb}
+.nav button.active{background:linear-gradient(100deg,#edf6ff,#e4f0ff);color:#1765c5;font-weight:700}
+.icon{width:25px;flex:none;text-align:center;font-size:18px}.label{white-space:nowrap;overflow:hidden}
+.main{margin-left:250px;min-height:100vh;transition:.22s}
+.sidebar.collapsed~.main{margin-left:72px}
+.topbar{height:74px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 30px}
+.page-title{font-size:21px;font-weight:750}
+.content{max-width:1180px;margin:auto;padding:28px 26px 40px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 18px #22466e0b}
+.primary{width:100%;min-height:56px;border:0;border-radius:10px;color:#fff;font:inherit;font-weight:700;font-size:16px;background:linear-gradient(110deg,var(--blue1),var(--blue2) 55%,var(--blue3));box-shadow:0 5px 13px #2878e833;cursor:pointer}
+.primary:hover{filter:brightness(1.03);transform:translateY(-1px)}
+.create{padding:18px;margin-bottom:22px}
+.calendar-card{padding:18px;margin-bottom:22px}
+.section-title{margin:0 0 14px;font-size:18px;font-weight:750}
+.calendar-head{display:flex;justify-content:space-between;align-items:center}
 
-.nav button.active{
-  background:linear-gradient(100deg,#edf6ff,#e4f0ff);
-  color:#1765c5;
-  font-weight:700
-}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--line);border-top:1px solid var(--line)}
+.weekday,.day{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px}
+.weekday{background:#f8fafc;text-align:center;font-size:12px;font-weight:700;color:#697484}
+.day{height:76px;background:#fff;position:relative;font-size:13px}
+.day.muted{background:#fbfcfd;color:#c6ccd4}
+.day.today{background:#eef6ff}
+.num{font-weight:700}
+.day.today .num{display:inline-grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#3187ed;color:#fff}
+.day.sun .num{color:#df6b76}.day.sat .num{color:#4d87ce}.day.today .num{color:#fff}
+.recruit{padding:18px}
+.empty{font-size:14px;color:var(--muted)}
+.footer{text-align:center;padding:18px 0 4px;color:#89929d;font-size:11px}
+.footer button{border:0;background:none;color:#707a86;text-decoration:underline;padding:2px 7px;font-size:11px;cursor:pointer}
+.modal-backdrop{display:none;position:fixed;inset:0;background:#14203066;z-index:50;padding:20px}
+.modal-backdrop.open{display:grid;place-items:center}
+.modal{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:15px;box-shadow:0 20px 60px #0003}
+.modal-head{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.modal-head h2{margin:0;font-size:18px}
+.close{border:0;background:#f2f4f7;border-radius:50%;width:34px;height:34px;color:#66717f;font-size:18px;cursor:pointer}
+.modal-body{padding:20px;font-size:14px;line-height:1.8}.modal-body .p1{margin:0 0 12px;font-size:18px;font-weight:700}.modal-body .p2{margin:0 0 7px;font-size:23px;font-weight:700}.modal-body .p3{margin:0 0 9px;font-size:14px}.modal-body .s1,.modal-body .s2{font-weight:700}
+.modal-foot{padding:13px 20px;border-top:1px solid var(--line);text-align:right}
+.modal-foot button{border:0;border-radius:8px;background:#eef3f8;padding:9px 16px;cursor:pointer}
 
-.icon{
-  width:25px;
-  flex:none;
-  text-align:center;
-  font-size:18px
-}
+.account-area{margin-top:auto;padding:12px 10px;border-top:1px solid var(--line);}
+.account-login{width:100%;min-height:44px;border:0;border-radius:9px;background:linear-gradient(110deg,var(--blue1),var(--blue2) 55%,var(--blue3));color:#fff;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 4px 10px #2878e822;}
+.account-login:hover{filter:brightness(1.03);transform:translateY(-1px)}
+.account-card{display:flex;align-items:center;gap:10px;padding:7px 5px;}
+.account-avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#eaf3ff;flex:none;}
+.account-info{min-width:0;flex:1;}
+.account-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.account-state{font-size:10px;color:#8a94a1;margin-top:2px;}
+.account-logout{margin-top:7px;width:100%;height:32px;border:1px solid #dce3eb;border-radius:7px;background:#f7f9fc;color:#66717f;font:inherit;font-size:12px;cursor:pointer;}
+.account-logout:hover{background:#eef3f8;}
+.sidebar.collapsed .account-area{padding:10px 8px;}
+.sidebar.collapsed .account-card{justify-content:center;padding:4px 0;}
+.sidebar.collapsed .account-info,.sidebar.collapsed .account-logout{display:none;}
+.sidebar.collapsed .account-avatar{width:38px;height:38px;}
+.auth-status{font-size:12px;color:#7b8592;margin-top:6px;text-align:center;}
 
-.label{
-  white-space:nowrap;
-  overflow:hidden
-}
-
-/* アカウント表示 */
-.account-area{
-  border-top:1px solid var(--line);
-  padding:12px;
-  background:#fff
-}
-
-.account-login{
-  width:100%;
-  min-height:42px;
-  border:0;
-  border-radius:9px;
-  color:#fff;
-  font:inherit;
-  font-weight:700;
-  cursor:pointer;
-  background:linear-gradient(110deg,var(--blue1),var(--blue2) 55%,var(--blue3));
-  box-shadow:0 4px 10px #2878e833
-}
-
-.account-user{
-  display:flex;
-  align-items:center;
-  gap:9px;
-  min-width:0
-}
-
-.account-avatar{
-  width:38px;
-  height:38px;
-  flex:none;
-  border-radius:50%;
-  object-fit:cover;
-  background:#e9eef5;
-  border:1px solid #dce4ee
-}
-
-.account-info{
-  min-width:0;
-  flex:1
-}
-
-.account-name{
-  font-size:13px;
-  font-weight:700;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis
-}
-
-.account-status{
-  font-size:10px;
-  color:#7b8592;
-  margin-top:1px
-}
-
-.logout-button{
-  margin-top:8px;
-  width:100%;
-  height:31px;
-  border:1px solid #dbe2eb;
-  border-radius:7px;
-  background:#f7f9fc;
-  color:#596675;
-  font:inherit;
-  font-size:11px;
-  cursor:pointer
-}
-
-.logout-button:hover{
-  background:#eef3f8
-}
-
-.sidebar.collapsed .account-area{
-  padding:10px 8px
-}
-
-.sidebar.collapsed .account-user{
-  justify-content:center
-}
-
-.sidebar.collapsed .account-info,
-.sidebar.collapsed .logout-button{
-  display:none
-}
-
-.sidebar.collapsed .account-avatar{
-  width:40px;
-  height:40px
-}
-
-.main{
-  margin-left:250px;
-  min-height:100vh;
-  transition:.22s
-}
-
-.sidebar.collapsed~.main{
-  margin-left:72px
-}
-
-.topbar{
-  height:74px;
-  background:#fff;
-  border-bottom:1px solid var(--line);
-  display:flex;
-  align-items:center;
-  padding:0 30px
-}
-
-.page-title{
-  font-size:21px;
-  font-weight:750
-}
-
-.content{
-  max-width:1180px;
-  margin:auto;
-  padding:28px 26px 40px
-}
-
-.card{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:14px;
-  box-shadow:0 4px 18px #22466e0b
-}
-
-.primary{
-  width:100%;
-  min-height:56px;
-  border:0;
-  border-radius:10px;
-  color:#fff;
-  font:inherit;
-  font-weight:700;
-  font-size:16px;
-  background:linear-gradient(110deg,var(--blue1),var(--blue2) 55%,var(--blue3));
-  box-shadow:0 5px 13px #2878e833;
-  cursor:pointer
-}
-
-.primary:hover{
-  filter:brightness(1.03);
-  transform:translateY(-1px)
-}
-
-.create{
-  padding:18px;
-  margin-bottom:22px
-}
-
-.calendar-card{
-  padding:18px;
-  margin-bottom:22px
-}
-
-.section-title{
-  margin:0 0 14px;
-  font-size:18px;
-  font-weight:750
-}
-
-.calendar-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center
-}
-
-.calendar{
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  border-left:1px solid var(--line);
-  border-top:1px solid var(--line)
-}
-
-.weekday,.day{
-  border-right:1px solid var(--line);
-  border-bottom:1px solid var(--line);
-  padding:8px
-}
-
-.weekday{
-  background:#f8fafc;
-  text-align:center;
-  font-size:12px;
-  font-weight:700;
-  color:#697484
-}
-
-.day{
-  height:76px;
-  background:#fff;
-  position:relative;
-  font-size:13px
-}
-
-.day.muted{
-  background:#fbfcfd;
-  color:#c6ccd4
-}
-
-.day.today{
-  background:#eef6ff
-}
-
-.num{
-  font-weight:700
-}
-
-.day.today .num{
-  display:inline-grid;
-  place-items:center;
-  width:27px;
-  height:27px;
-  border-radius:50%;
-  background:#3187ed;
-  color:#fff
-}
-
-.day.sun .num{color:#df6b76}
-.day.sat .num{color:#4d87ce}
-.day.today .num{color:#fff}
-
-.recruit{
-  padding:18px
-}
-
-.empty{
-  font-size:14px;
-  color:var(--muted)
-}
-
-.footer{
-  text-align:center;
-  padding:18px 0 4px;
-  color:#89929d;
-  font-size:11px
-}
-
-.footer button{
-  border:0;
-  background:none;
-  color:#707a86;
-  text-decoration:underline;
-  padding:2px 7px;
-  font-size:11px;
-  cursor:pointer
-}
-
-.modal-backdrop{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:#14203066;
-  z-index:50;
-  padding:20px
-}
-
-.modal-backdrop.open{
-  display:grid;
-  place-items:center
-}
-
-.modal{
-  width:min(720px,100%);
-  max-height:90vh;
-  overflow:auto;
-  background:#fff;
-  border-radius:15px;
-  box-shadow:0 20px 60px #0003
-}
-
-.modal-head{
-  padding:17px 20px;
-  border-bottom:1px solid var(--line);
-  display:flex;
-  align-items:center;
-  justify-content:space-between
-}
-
-.modal-head h2{
-  margin:0;
-  font-size:18px
-}
-
-.close{
-  border:0;
-  background:#f2f4f7;
-  border-radius:50%;
-  width:34px;
-  height:34px;
-  color:#66717f;
-  font-size:18px;
-  cursor:pointer
-}
-
-.modal-body{
-  padding:20px;
-  font-size:14px;
-  line-height:1.8
-}
-
-.modal-body .p1{
-  margin:0 0 12px;
-  font-size:18px;
-  font-weight:700
-}
-
-.modal-body .p2{
-  margin:0 0 7px;
-  font-size:23px;
-  font-weight:700
-}
-
-.modal-body .p3{
-  margin:0 0 9px;
-  font-size:14px
-}
-
-.modal-body .s1,
-.modal-body .s2{
-  font-weight:700
-}
-
-.modal-foot{
-  padding:13px 20px;
-  border-top:1px solid var(--line);
-  text-align:right
-}
-
-.modal-foot button{
-  border:0;
-  border-radius:8px;
-  background:#eef3f8;
-  padding:9px 16px;
-  cursor:pointer
+@media(max-width:700px){
+.sidebar{width:72px}.sidebar .brand-name,.sidebar .label{display:none}.nav button{justify-content:center;padding:0}
+.main{margin-left:72px}.topbar{padding:0 16px}.content{padding:18px 12px 30px}
+.day{height:60px;padding:6px 4px}
 }
 
 /* チャットパレット生成 */
-.palette-page{
-  padding:22px;
-  margin-bottom:22px
-}
-
-.palette-intro{
-  margin-bottom:20px
-}
-
-.palette-intro .section-title{
-  margin-bottom:6px
-}
-
-.palette-intro p{
-  margin:0;
-  color:var(--muted);
-  font-size:13px;
-  line-height:1.7
-}
-
-.palette-grid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:14px
-}
-
-.field-card{
-  border:1px solid var(--line);
-  border-radius:11px;
-  background:#fbfcfe;
-  padding:15px
-}
-
-.field-card label{
-  display:block;
-  margin-bottom:8px;
-  font-size:13px;
-  font-weight:700;
-  color:#4f5967
-}
-
-.field-card label span{
-  font-weight:800;
-  color:#3187ed
-}
-
-.field-card input{
-  width:100%;
-  height:45px;
-  border:1px solid #dbe2eb;
-  border-radius:9px;
-  background:#fff;
-  padding:0 12px;
-  color:var(--text);
-  font:inherit;
-  outline:none;
-  transition:.15s
-}
-
-.field-card input::placeholder{
-  color:#b5bdc8
-}
-
-.field-card input:focus{
-  border-color:#65b4ff;
-  box-shadow:0 0 0 3px #65b4ff22
-}
-
-.output-choice{
-  margin-top:18px;
-  padding:15px;
-  border:1px solid var(--line);
-  border-radius:11px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:15px;
-  background:#f8fafc
-}
-
-.output-title{
-  font-weight:750;
-  font-size:14px
-}
-
-.output-help{
-  font-size:12px;
-  color:var(--muted);
-  margin-top:3px
-}
-
-.palette-button{
-  width:150px;
-  min-height:45px;
-  font-size:14px
-}
-
-.result-card{
-  margin-top:16px;
-  min-height:90px;
-  border:1px solid var(--line);
-  border-radius:11px;
-  background:#fff;
-  padding:15px;
-  white-space:pre-wrap;
-  word-break:break-word
-}
-
-.result-empty{
-  color:#a3acb8;
-  font-size:13px
-}
-
-.result-text{
-  margin:0;
-  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans JP",monospace;
-  font-size:14px;
-  line-height:1.8;
-  color:#202630
-}
-
-.copy-button{
-  display:block;
-  margin:10px 0 0 auto;
-  border:0;
-  border-radius:8px;
-  background:#eef3f8;
-  color:#596675;
-  padding:9px 16px;
-  font:inherit;
-  font-size:13px;
-  font-weight:700;
-  cursor:pointer
-}
-
-.copy-button:hover{
-  background:#e5edf6
-}
-
-/* Discord設定確認 */
-.discord-debug{
-  display:none;
-  margin-bottom:22px;
-  padding:18px
-}
-
-.discord-debug-title{
-  font-size:16px;
-  font-weight:750;
-  margin-bottom:8px
-}
-
-.discord-debug-text{
-  font-size:13px;
-  line-height:1.7;
-  color:var(--muted)
-}
-
-.discord-debug-status{
-  margin-top:12px;
-  padding:10px 12px;
-  border-radius:8px;
-  background:#f6f8fb;
-  font-size:12px;
-  word-break:break-word
-}
-
+.palette-page{padding:22px;margin-bottom:22px}
+.palette-intro{margin-bottom:20px}
+.palette-intro .section-title{margin-bottom:6px}
+.palette-intro p{margin:0;color:var(--muted);font-size:13px;line-height:1.7}
+.palette-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.field-card{border:1px solid var(--line);border-radius:11px;background:#fbfcfe;padding:15px}
+.field-card label{display:block;margin-bottom:8px;font-size:13px;font-weight:700;color:#4f5967}
+.field-card label span{font-weight:800;color:#3187ed}
+.field-card input{width:100%;height:45px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;padding:0 12px;color:var(--text);font:inherit;outline:none;transition:.15s}
+.field-card input::placeholder{color:#b5bdc8}
+.field-card input:focus{border-color:#65b4ff;box-shadow:0 0 0 3px #65b4ff22}
+.output-choice{margin-top:18px;padding:15px;border:1px solid var(--line);border-radius:11px;display:flex;align-items:center;justify-content:space-between;gap:15px;background:#f8fafc}
+.output-title{font-weight:750;font-size:14px}
+.output-help{font-size:12px;color:var(--muted);margin-top:3px}
+.palette-button{width:150px;min-height:45px;font-size:14px}
+.result-card{margin-top:16px;min-height:90px;border:1px solid var(--line);border-radius:11px;background:#fff;padding:15px;white-space:pre-wrap;word-break:break-word}
+.result-empty{color:#a3acb8;font-size:13px}
+.result-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans JP",monospace;font-size:14px;line-height:1.8;color:#202630}
+.copy-button{display:block;margin:10px 0 0 auto;border:0;border-radius:8px;background:#eef3f8;color:#596675;padding:9px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.copy-button:hover{background:#e5edf6}
 @media(max-width:700px){
-  .sidebar{
-    width:72px
-  }
-
-  .sidebar .brand-name,
-  .sidebar .label{
-    display:none
-  }
-
-  .nav button{
-    justify-content:center;
-    padding:0
-  }
-
-  .main{
-    margin-left:72px
-  }
-
-  .topbar{
-    padding:0 16px
-  }
-
-  .content{
-    padding:18px 12px 30px
-  }
-
-  .day{
-    height:60px;
-    padding:6px 4px
-  }
-
-  .palette-grid{
-    grid-template-columns:1fr
-  }
-
-  .output-choice{
-    align-items:stretch;
-    flex-direction:column
-  }
-
-  .palette-button{
-    width:100%
-  }
+ .palette-grid{grid-template-columns:1fr}
+ .output-choice{align-items:stretch;flex-direction:column}
+ .palette-button{width:100%}
 }
+
+
+/* ===== Daycode integration ===== */
+.daycode-page{padding:18px;margin-bottom:22px}
+.daycode-page .daycode-inner{width:100%}
+.daycode-page .daycode-title{margin:0 0 6px}
+.daycode-page .daycode-note{margin:0 0 14px}
+.daycode-page header{display:none}
+.daycode-page .panel{box-shadow:none}
+
+.daycode-page *{box-sizing:border-box}.daycode-page{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;background:#f5f6f8;color:#222}
+.daycode-page header{background:#fff;border-bottom:1px solid #ddd;padding:16px 20px;position:sticky;top:0;z-index:10}
+.daycode-page h1,.daycode-page h2{margin:0 0 8px}.daycode-page .sub,.daycode-page .note{font-size:13px;color:#666;line-height:1.6}
+.daycode-page main{max-width:1200px;margin:18px auto;padding:0 14px 40px}
+.daycode-page .panel{background:#fff;border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:14px}
+.daycode-page .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.daycode-page .toolbar select,.daycode-page .toolbar button,.daycode-page button,.daycode-page select{font:inherit}
+.daycode-page button,.daycode-page select{border:1px solid #bbb;border-radius:6px;background:#fff;padding:7px 11px}.daycode-page button{cursor:pointer}
+.daycode-page .primary{background:#222;color:#fff;border-color:#222}.daycode-page .danger{color:#a00}
+.daycode-page .status{color:#18743a;font-size:13px;margin-left:auto}
+.daycode-page .table-wrap{overflow:auto;background:#fff;border:1px solid #ddd}
+.daycode-page table{border-collapse:collapse;min-width:720px;width:100%}.daycode-page th,.daycode-page td{border:1px solid #ddd;padding:8px;text-align:center;white-space:nowrap}
+.daycode-page th{background:#f0f1f3;position:sticky;top:73px;z-index:2}.daycode-page .date{position:sticky;left:0;background:#fff;text-align:left;z-index:1}
+.daycode-page th.date{background:#f0f1f3;z-index:3}.daycode-page .member{text-decoration:underline;cursor:pointer}.daycode-page .answer{font-weight:700}.daycode-page .none{color:#999}.daycode-page .ok{color:#1762c7}.daycode-page .maybe{color:#d79b00}.daycode-page .no{color:#d33a3a}
+.daycode-page .editor{display:none}.daycode-page .editor.active{display:block}.daycode-page .bulk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:12px 0}
+.daycode-page .bulkbox{border:1px solid #ddd;border-radius:6px;padding:6px;text-align:center;background:#fafafa}.daycode-page .bulkbox select{width:100%;margin-top:5px}
+.daycode-page .day{display:grid;grid-template-columns:1fr 180px;gap:10px;padding:7px 0;border-bottom:1px solid #eee;align-items:center}
+.daycode-page .choices{display:flex;gap:6px;justify-content:flex-end}.daycode-page .choice{min-width:50px;background:#fff}.daycode-page .choice:nth-child(1){color:#1762c7}.daycode-page .choice:nth-child(2){color:#d79b00}.daycode-page .choice:nth-child(3){color:#d33a3a}.daycode-page .choice.selected{font-weight:800;box-shadow:0 0 0 2px currentColor inset}
+.daycode-page .actions{display:flex;gap:8px;margin-top:14px}.daycode-page .editor-top-actions{margin-top:0;margin-bottom:14px}
+@media(max-width:700px){.bulk{grid-template-columns:repeat(2,1fr)}.day{grid-template-columns:1fr}.choices{justify-content:flex-start}.status{width:100%;margin-left:0}}
+
+/* ===== シナリオ予定機能 ===== */
+.schedule-page{display:none;padding:18px;margin-bottom:22px}
+.schedule-page .section-title{margin-bottom:16px}
+.schedule-form{display:grid;gap:14px}
+.schedule-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.schedule-field{border:1px solid var(--line);border-radius:11px;background:#fbfcfe;padding:15px}
+.schedule-field.full{grid-column:1/-1}
+.schedule-field label{display:block;margin-bottom:8px;font-size:13px;font-weight:700;color:#4f5967}
+.schedule-field label .required{color:#3187ed}
+.schedule-field input,.schedule-field select,.schedule-field textarea{width:100%;border:1px solid #dbe2eb;border-radius:9px;background:#fff;padding:10px 12px;color:var(--text);font:inherit;outline:none}
+.schedule-field input,.schedule-field select{height:45px}
+.schedule-field textarea{min-height:95px;resize:vertical}
+.schedule-field input:focus,.schedule-field select:focus,.schedule-field textarea:focus{border-color:#65b4ff;box-shadow:0 0 0 3px #65b4ff22}
+.schedule-readonly{background:#f1f4f8!important;color:#66717f!important}
+.schedule-help{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.6}
+.capacity-row{display:grid;grid-template-columns:170px 1fr;gap:10px}
+.confirmed-list{display:grid;gap:10px;margin-top:10px}
+.confirmed-item{border:1px solid #dbe2eb;border-radius:10px;background:#fff;padding:12px}
+.confirmed-item-title{font-size:12px;font-weight:800;color:#66717f;margin-bottom:8px}
+.form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:2px}
+.secondary-button,.danger-button{border:1px solid #dce3eb;border-radius:9px;background:#f7f9fc;color:#596675;font:inherit;font-weight:700;padding:11px 20px;cursor:pointer}
+.secondary-button:hover{background:#eef3f8}
+.schedule-card{padding:18px;margin-bottom:16px}
+.schedule-card-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.schedule-card h3{margin:0;font-size:18px}
+.schedule-meta{margin-top:5px;color:#697484;font-size:13px}
+.schedule-description{margin:12px 0;padding:12px;border-radius:9px;background:#f7f9fc;white-space:pre-wrap;line-height:1.7;font-size:13px}
+.schedule-participants{display:grid;gap:8px;margin-top:12px}
+.participant-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:13px}
+.participant-row .participant-name{font-weight:750}
+.participant-row .char{color:#596675}
+.schedule-link{color:#1762c7;text-decoration:none;font-weight:700}
+.schedule-link:hover{text-decoration:underline}
+.schedule-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.schedule-actions button{border:1px solid #dce3eb;border-radius:8px;background:#f7f9fc;color:#596675;font:inherit;font-size:13px;font-weight:700;padding:9px 14px;cursor:pointer}
+.schedule-actions .primary-action{border:0;color:#fff;background:linear-gradient(110deg,var(--blue1),var(--blue2) 55%,var(--blue3))}
+.schedule-actions .danger-action{color:#b44955}
+.schedule-actions button:hover{filter:brightness(1.03)}
+.user-picker-note{font-size:12px;color:var(--muted)}
+@media(max-width:700px){
+  .schedule-grid{grid-template-columns:1fr}
+  .schedule-field.full{grid-column:auto}
+  .capacity-row{grid-template-columns:1fr}
+  .form-actions{flex-direction:column-reverse}
+  .form-actions button{width:100%}
+}
+
 </style>
 </head>
-
 <body>
-
 <div class="app">
-
 <aside class="sidebar" id="sidebar">
-
-  <div class="brand">
-    <div class="die">100</div>
-    <div class="brand-name">卓ログ</div>
-  </div>
-
-  <button class="toggle"
-          onclick="toggleSidebar()"
-          aria-label="目次を拡大・縮小">‹</button>
-
-  <nav class="nav">
-
-    <button class="active"
-            data-page="ホーム"
-            onclick="home(this)">
-      <span class="icon">⌂</span>
-      <span class="label">ホーム</span>
-    </button>
-
-    <button data-page="シナリオ予定作成"
-            onclick="placeholder(this)">
-      <span class="icon">＋</span>
-      <span class="label">シナリオ予定作成</span>
-    </button>
-
-    <button data-page="予定作成済みシナリオ"
-            onclick="placeholder(this)">
-      <span class="icon">▣</span>
-      <span class="label">予定作成済みシナリオ</span>
-    </button>
-
-    <button data-page="参加希望済みシナリオ"
-            onclick="placeholder(this)">
-      <span class="icon">☆</span>
-      <span class="label">参加希望済みシナリオ</span>
-    </button>
-
-    <button data-page="プレイ済みシナリオ"
-            onclick="placeholder(this)">
-      <span class="icon">✓</span>
-      <span class="label">プレイ済みシナリオ</span>
-    </button>
-
-    <button data-page="チャットパレット生成"
-            onclick="chatPalette(this)">
-      <span class="icon">▤</span>
-      <span class="label">チャットパレット生成</span>
-    </button>
-
-    <button data-page="デイコード"
-            onclick="placeholder(this)">
-      <span class="icon">▦</span>
-      <span class="label">デイコード</span>
-    </button>
-
-  </nav>
-
-  <!-- Discordアカウント表示 -->
-  <div class="account-area" id="accountArea">
-
-    <button class="account-login"
-            id="loginButton"
-            onclick="loginWithDiscord()">
-      Discordでログイン
-    </button>
-
-    <div class="account-user"
-         id="accountUser"
-         style="display:none">
-
-      <img class="account-avatar"
-           id="accountAvatar"
-           alt="Discordアイコン">
-
-      <div class="account-info">
-        <div class="account-name"
-             id="accountName"></div>
-        <div class="account-status">
-          Discordでログイン中
-        </div>
-      </div>
-
-    </div>
-
-    <button class="logout-button"
-            id="logoutButton"
-            onclick="logoutDiscord()"
-            style="display:none">
-      ログアウト
-    </button>
-
-  </div>
-
+<div class="brand"><div class="die">100</div><div class="brand-name">卓ログ</div></div>
+<button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
+<nav class="nav">
+<button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
+<button data-page="シナリオ予定作成" onclick="placeholder(this)"><span class="icon">＋</span><span class="label">シナリオ予定作成</span></button>
+<button data-page="予定作成済みシナリオ" onclick="placeholder(this)"><span class="icon">▣</span><span class="label">予定作成済みシナリオ</span></button>
+<button data-page="参加希望済みシナリオ" onclick="placeholder(this)"><span class="icon">☆</span><span class="label">参加希望済みシナリオ</span></button>
+<button data-page="プレイ済みシナリオ" onclick="placeholder(this)"><span class="icon">✓</span><span class="label">プレイ済みシナリオ</span></button>
+<button data-page="チャットパレット生成" onclick="chatPalette(this)"><span class="icon">▤</span><span class="label">チャットパレット生成</span></button>
+<button data-page="デイコード" onclick="daycodePage(this)"><span class="icon">▦</span><span class="label">デイコード</span></button>
+</nav>
+<div class="account-area" id="accountArea"></div>
 </aside>
 
-
 <main class="main">
-
-<header class="topbar">
-  <div class="page-title"
-       id="pageTitle">ホーム</div>
-</header>
-
+<header class="topbar"><div class="page-title" id="pageTitle">ホーム</div></header>
 <div class="content">
-
-<!-- Discordログイン動作確認 -->
-<section class="card discord-debug"
-         id="discordDebug">
-
-  <div class="discord-debug-title">
-    Discordログイン確認
-  </div>
-
-  <div class="discord-debug-text">
-    現在のDiscordログイン状態を確認できます。
-  </div>
-
-  <div class="discord-debug-status"
-       id="discordDebugStatus">
-    未確認
-  </div>
-
-</section>
-
-
-<section class="card create">
-  <button class="primary"
-          onclick="placeholder(document.querySelector('[data-page=&quot;シナリオ予定作成&quot;]'))">
-    ＋　シナリオ予定を作成
-  </button>
-</section>
-
+<section class="card create"><button class="primary" onclick="scenarioSchedulePage(document.querySelector('[data-page=&quot;シナリオ予定作成&quot;]'))">＋　シナリオ予定を作成</button></section>
 
 <section class="card calendar-card">
+<div class="calendar-head"><h2 class="section-title">カレンダー</h2></div>
+<div class="calendar" id="calendar"></div>
+</section>
 
-  <div class="calendar-head">
-    <h2 class="section-title">カレンダー</h2>
-  </div>
-
-  <div class="calendar"
-       id="calendar"></div>
-
+<section class="card recruit" id="homeRecruit">
+<h2 class="section-title">参加者募集中シナリオ</h2>
+<div class="empty">現在、参加者を募集中のシナリオはありません。</div>
 </section>
 
 
-<section class="card recruit"
-         id="homeRecruit">
-
-  <h2 class="section-title">
-    参加者募集中シナリオ
-  </h2>
-
-  <div class="empty">
-    現在、参加者を募集中のシナリオはありません。
-  </div>
-
-</section>
 
 
-<section class="card palette-page"
-         id="chatPaletteOutputPage"
-         style="display:none">
+<section class="card schedule-page" id="scheduleCreatePage">
+  <h2 class="section-title" id="scheduleFormTitle">シナリオ予定作成</h2>
+  <div class="schedule-form">
+    <div class="schedule-grid">
+      <div class="schedule-field">
+        <label for="scheduleKP">KP</label>
+        <input id="scheduleKP" class="schedule-readonly" type="text" readonly>
+      </div>
 
-  <div class="palette-intro">
+      <div class="schedule-field">
+        <label for="scheduleTitle">シナリオ名 <span class="required">＊</span></label>
+        <input id="scheduleTitle" type="text" placeholder="シナリオ名">
+      </div>
 
-    <h2 class="section-title">
-      チャットパレット出力
-    </h2>
+      <div class="schedule-field">
+        <label for="scheduleSystem">システム <span class="required">＊</span></label>
+        <select id="scheduleSystem" onchange="toggleOtherSystem()">
+          <option value="">選択してください</option>
+          <option value="6版">6版</option>
+          <option value="7版">7版</option>
+          <option value="その他">その他</option>
+        </select>
+        <input id="scheduleOtherSystem" type="text" placeholder="システム名を入力" style="display:none;margin-top:9px">
+      </div>
 
-    <p>
-      いあきゃらからコピーしたチャットパレットを読み取り、
-      卓ログで使用するチャットパレットを生成します。
-    </p>
+      <div class="schedule-field">
+        <label for="scheduleCapacityMode">定員判定方法 <span class="required">＊</span></label>
+        <select id="scheduleCapacityMode" onchange="toggleCapacityFields()">
+          <option value="range">範囲内</option>
+          <option value="exact">ジャスト</option>
+        </select>
+      </div>
 
-  </div>
+      <div class="schedule-field">
+        <label>定員 <span class="required">＊</span></label>
+        <div class="capacity-row" id="capacityRangeFields">
+          <input id="scheduleCapacityMin" type="number" min="1" placeholder="下限">
+          <input id="scheduleCapacityMax" type="number" min="1" placeholder="上限">
+        </div>
+        <input id="scheduleCapacityExact" type="number" min="1" placeholder="人数" style="display:none">
+        <div class="schedule-help">「範囲内」は下限～上限、「ジャスト」は指定人数を定員として扱います。</div>
+      </div>
 
-  <div class="field-card">
+      <div class="schedule-field full">
+        <label for="scheduleDescription">シナリオについて（任意）</label>
+        <textarea id="scheduleDescription" placeholder="シナリオ概要など"></textarea>
+      </div>
 
-    <label for="officialInput">
-      ① いあきゃらのチャットパレット
-    </label>
+      <div class="schedule-field full">
+        <label for="scheduleCocofolia">ココフォリアURL <span class="required">＊</span></label>
+        <input id="scheduleCocofolia" type="url" placeholder="https://ccfolia.com/rooms/...">
+      </div>
 
-    <textarea
-      id="officialInput"
-      style="width:100%;min-height:220px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical"
-      placeholder="いあきゃらからコピーして貼り付け"></textarea>
-
-    <button class="primary palette-button"
-            id="officialRead"
-            onclick="officialReadSkills()">
-      読み取り
-    </button>
-
-    <button class="copy-button"
-            style="display:inline-block;margin:8px 0 0 0"
-            onclick="officialClear()">
-      クリア
-    </button>
-
-    <p id="officialStatus"></p>
-
-  </div>
-
-
-  <div class="field-card"
-       style="margin-top:14px">
-
-    <label>② 読み取り結果</label>
-
-    <p id="officialCount"></p>
-
-    <div id="officialSkills">
-      まだ読み取っていません。
+      <div class="schedule-field full">
+        <label for="scheduleConfirmedCount">確定参加者（任意）</label>
+        <input id="scheduleConfirmedCount" type="number" min="0" placeholder="確定参加者の人数" oninput="renderConfirmedInputs()">
+        <div class="schedule-help">確定参加者は定員に含まれます。KP本人は選択できません。</div>
+        <div id="confirmedInputs" class="confirmed-list"></div>
+      </div>
     </div>
 
+    <div class="form-actions">
+      <button class="secondary-button" onclick="cancelScheduleForm()">キャンセル</button>
+      <button class="primary palette-button" onclick="saveScenarioSchedule()">予定作成</button>
+    </div>
   </div>
-
-
-  <div class="field-card"
-       style="margin-top:14px">
-
-    <label>③ 生成結果</label>
-
-    <button class="primary palette-button"
-            onclick="officialGenerate()">
-      チャットパレットを生成
-    </button>
-
-    <textarea
-      id="officialResult"
-      readonly
-      style="width:100%;min-height:350px;margin-top:12px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical"></textarea>
-
-    <button class="copy-button"
-            onclick="officialCopy()">
-      コピー
-    </button>
-
-    <p id="officialCopyStatus"></p>
-
-  </div>
-
 </section>
 
+<section class="card schedule-page" id="scheduleManagePage">
+  <h2 class="section-title">予定作成済みシナリオ</h2>
+  <div id="scheduleManageList"></div>
+</section>
 
-<section class="card palette-page"
-         id="palettePage"
-         style="display:none">
-
-  <div class="palette-intro">
-
-    <h2 class="section-title">
-      オリジナル技能作成
-    </h2>
-
-    <p>
-      いあきゃらで出力しきれない技能などを、
-      チャットパレット用の形式で作成できます。
-    </p>
-
+<section class="card schedule-page" id="scheduleApplyPage">
+  <h2 class="section-title" id="scheduleApplyTitle">シナリオに参加する</h2>
+  <div class="schedule-form">
+    <div class="schedule-grid">
+      <div class="schedule-field">
+        <label for="scheduleApplyUser">ユーザー名</label>
+        <input id="scheduleApplyUser" class="schedule-readonly" type="text" readonly>
+      </div>
+      <div class="schedule-field">
+        <label for="scheduleApplyCharacter">キャラクター名</label>
+        <input id="scheduleApplyCharacter" type="text" placeholder="キャラクター名">
+      </div>
+      <div class="schedule-field full">
+        <label for="scheduleApplyIachara">いあきゃらのURL</label>
+        <input id="scheduleApplyIachara" type="url" placeholder="https://iachara.com/...">
+      </div>
+      <div class="schedule-field full">
+        <label for="scheduleApplyOther">その他（任意）</label>
+        <textarea id="scheduleApplyOther" placeholder="コメントなど"></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="secondary-button" onclick="cancelScheduleApply()">キャンセル</button>
+      <button class="primary palette-button" onclick="saveScenarioParticipant()">確定</button>
+    </div>
   </div>
+</section>
 
+<section class="card schedule-page" id="scheduleJoinedPage">
+  <h2 class="section-title">参加希望済みシナリオ</h2>
+  <div id="scheduleJoinedList"></div>
+</section>
+
+<section class="card palette-page" id="chatPaletteOutputPage" style="display:none">
+  <div class="palette-intro">
+    <h2 class="section-title">チャットパレット出力</h2>
+    <p>いあきゃらからコピーしたチャットパレットを読み取り、卓ログで使用するチャットパレットを生成します。</p>
+  </div>
+  <div class="field-card">
+    <label for="officialInput">① いあきゃらのチャットパレット</label>
+    <textarea id="officialInput" style="width:100%;min-height:220px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical" placeholder="いあきゃらからコピーして貼り付け"></textarea>
+    <button class="primary palette-button" id="officialRead" onclick="officialReadSkills()">読み取り</button>
+    <button class="copy-button" style="display:inline-block;margin:8px 0 0 0" onclick="officialClear()">クリア</button>
+    <p id="officialStatus"></p>
+  </div>
+  <div class="field-card" style="margin-top:14px">
+    <label>② 読み取り結果</label>
+    <p id="officialCount"></p>
+    <div id="officialSkills">まだ読み取っていません。</div>
+  </div>
+  <div class="field-card" style="margin-top:14px">
+    <label>③ 生成結果</label>
+    <button class="primary palette-button" onclick="officialGenerate()">チャットパレットを生成</button>
+    <textarea id="officialResult" readonly style="width:100%;min-height:350px;margin-top:12px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical"></textarea>
+    <button class="copy-button" onclick="officialCopy()">コピー</button>
+    <p id="officialCopyStatus"></p>
+  </div>
+</section>
+
+<section class="card palette-page" id="palettePage" style="display:none">
+  <div class="palette-intro">
+    <h2 class="section-title">オリジナル技能作成</h2>
+    <p>いあきゃらで出力しきれない技能などを、チャットパレット用の形式で作成できます。</p>
+  </div>
 
   <div class="palette-grid">
-
     <div class="field-card">
-
-      <label for="successValue">
-        成功値 <span>◯</span>
-      </label>
-
-      <input
-        id="successValue"
-        type="text"
-        placeholder="5"
-        autocomplete="off">
-
+      <label for="successValue">成功値 <span>◯</span></label>
+      <input id="successValue" type="text" placeholder="5" autocomplete="off">
     </div>
-
-
     <div class="field-card">
-
-      <label for="skillName">
-        技能の名前 <span>□</span>
-      </label>
-
-      <input
-        id="skillName"
-        type="text"
-        placeholder="医学"
-        autocomplete="off">
-
+      <label for="skillName">技能の名前 <span>□</span></label>
+      <input id="skillName" type="text" placeholder="医学" autocomplete="off">
     </div>
-
-
     <div class="field-card">
-
-      <label for="diceValue">
-        使用するダイス <span>△</span>
-      </label>
-
-      <input
-        id="diceValue"
-        type="text"
-        placeholder="2D3"
-        autocomplete="off">
-
+      <label for="diceValue">使用するダイス <span>△</span></label>
+      <input id="diceValue" type="text" placeholder="2D3" autocomplete="off">
     </div>
-
-
     <div class="field-card">
-
-      <label for="featureName">
-        技能の名前と特徴 <span>◎</span>
-      </label>
-
-      <input
-        id="featureName"
-        type="text"
-        placeholder="医学回復"
-        autocomplete="off">
-
+      <label for="featureName">技能の名前と特徴 <span>◎</span></label>
+      <input id="featureName" type="text" placeholder="医学回復" autocomplete="off">
     </div>
-
   </div>
-
 
   <div class="output-choice">
-
     <div>
-
-      <div class="output-title">
-        出力内容
-      </div>
-
-      <div class="output-help">
-        入力済みの項目だけを組み合わせて出力します。
-      </div>
-
+      <div class="output-title">出力内容</div>
+      <div class="output-help">入力済みの項目だけを組み合わせて出力します。</div>
     </div>
-
-    <button class="primary palette-button"
-            onclick="generatePalette()">
-      出力
-    </button>
-
+    <button class="primary palette-button" onclick="generatePalette()">出力</button>
   </div>
 
-
-  <div class="result-card"
-       id="paletteResult"
-       aria-live="polite">
-
-    <div class="result-empty">
-      ここにチャットパレットが表示されます。
-    </div>
-
+  <div class="result-card" id="paletteResult" aria-live="polite">
+    <div class="result-empty">ここにチャットパレットが表示されます。</div>
   </div>
-
-  <button class="copy-button"
-          id="copyButton"
-          onclick="copyPalette()"
-          style="display:none">
-    コピー
-  </button>
-
+  <button class="copy-button" id="copyButton" onclick="copyPalette()" style="display:none">コピー</button>
 </section>
 
+<section class="card daycode-page" id="daycodePage" style="display:none">
+  <h2 class="section-title daycode-title">デイコード</h2>
+  <p class="daycode-note">開催可能日の入力・確認</p>
+<section class="card daycode-page" id="daycodePage" style="display:none">
+<section class="panel toolbar">
+<label>入力ユーザー：<select id="dc-user"></select></label>
+<button onclick="dcOpenEditor()">自分の日程を入力</button>
+<button onclick="dcAddNextMonth()">翌月分を追加</button>
+<span id="dc-dcStatus" class="dcStatus"></span>
+</section>
 
-<footer class="footer">
+<div class="table-wrap"><table id="dc-table"></table></div>
 
-  <button onclick="openLegal('terms')">
-    利用規約
-  </button>
+<section id="dc-editor" class="panel editor">
+<h2 id="dc-editorTitle"></h2>
+<div class="actions editor-top-actions"><button class="primary" onclick="dcSaveEditor()">日程登録</button><button onclick="dcCloseEditor()">キャンセル</button></div>
+<div class="panel" style="background:#fafafa">
+<b>曜日一括入力</b>
+<div class="note">選択した曜日のすべての日付へ一括反映します。反映後、個別に変更できます。</div>
+<div id="dc-bulk" class="bulk"></div>
+</div>
+<div id="dc-days"></div>
+<div class="actions"><button class="primary" onclick="dcSaveEditor()">日程登録</button><button onclick="dcCloseEditor()">キャンセル</button></div>
+</section>
+</section>
+</section>
 
-  ｜
-
-  <button onclick="openLegal('privacy')">
-    プライバシーポリシー
-  </button>
-
-</footer>
-
+<footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
 </main>
 </div>
 
-
-<div class="modal-backdrop"
-     id="modal"
-     onclick="backdrop(event)">
-
-  <div class="modal">
-
-    <div class="modal-head">
-
-      <h2 id="modalTitle"></h2>
-
-      <button class="close"
-              onclick="closeLegal()">
-        ×
-      </button>
-
-    </div>
-
-    <div class="modal-body"
-         id="modalBody"></div>
-
-    <div class="modal-foot">
-
-      <button onclick="closeLegal()">
-        閉じる
-      </button>
-
-    </div>
-
-  </div>
-
+<div class="modal-backdrop" id="modal" onclick="backdrop(event)">
+<div class="modal">
+<div class="modal-head"><h2 id="modalTitle"></h2><button class="close" onclick="closeLegal()">×</button></div>
+<div class="modal-body" id="modalBody"></div>
+<div class="modal-foot"><button onclick="closeLegal()">閉じる</button></div>
+</div>
 </div>
 
-
 <script>
-
-/* =========================================================
-   Discord設定
-   ========================================================= */
-
-/*
- * ここにDiscord Developer Portalの
- * Application IDを入力してください。
- *
- * 例：
- * const DISCORD_CLIENT_ID = "123456789012345678";
- *
- * ※Bot TokenやClient Secretは絶対に入力しないでください。
- */
-
-const DISCORD_CLIENT_ID = "1543762389000790016";
-
-
-/*
- * 今回はGitHub Pagesのこのページ自身を
- * Discord OAuth2の戻り先として使用します。
- */
-const DISCORD_REDIRECT_URI =
-  "https://laidouxichuan-ctrl.github.io/Takulog/";
-
-
+/* Discord OAuth2 設定
+   Discord Developer Portalで「Public Client」を有効にしている前提です。
+   CLIENT_IDにはDiscordアプリケーションのApplication IDを設定してください。
+*/
+const DISCORD_CLIENT_ID = "YOUR_DISCORD_APPLICATION_ID";
+const DISCORD_REDIRECT_URI = "https://laidouxichuan-ctrl.github.io/Takulog/";
 const DISCORD_SCOPE = "identify";
+const DISCORD_API = "https://discord.com/api/v10";
 
-
-const DISCORD_TOKEN_KEY =
-  "takulog_discord_access_token";
-
-
-const DISCORD_USER_KEY =
-  "takulog_discord_user";
-
-
-const DISCORD_VERIFIER_KEY =
-  "takulog_discord_code_verifier";
-
-
-/* =========================================================
-   Discord OAuth2
-   ========================================================= */
-
-function createRandomString(length = 64){
-
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
-
-  const array =
-    new Uint8Array(length);
-
-  crypto.getRandomValues(array);
-
-  let result = "";
-
-  for(const value of array){
-    result += chars[value % chars.length];
-  }
-
-  return result;
+function randomString(length=64){
+  const bytes=new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes,b=>('0'+b.toString(16)).slice(-2)).join('');
 }
-
-
-async function sha256Base64Url(value){
-
-  const data =
-    new TextEncoder().encode(value);
-
-  const digest =
-    await crypto.subtle.digest("SHA-256", data);
-
-  const bytes =
-    new Uint8Array(digest);
-
-  let binary = "";
-
-  for(const byte of bytes){
-    binary += String.fromCharCode(byte);
-  }
-
-  return btoa(binary)
-    .replace(/\+/g,"-")
-    .replace(/\//g,"_")
-    .replace(/=+$/,"");
+async function sha256Base64Url(text){
+  const data=new TextEncoder().encode(text);
+  const hash=await crypto.subtle.digest('SHA-256',data);
+  let binary='';
+  new Uint8Array(hash).forEach(b=>binary+=String.fromCharCode(b));
+  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
+function discordAvatarUrl(user){
+  if(user.avatar) return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`;
+  const index=(BigInt(user.id)>>22n)%6n;
+  return `https://cdn.discordapp.com/embed/avatars/${index}.png`;
+}
+function renderAccount(user){
+  const area=document.getElementById('accountArea');
+  if(!area)return;
+  if(user){
+    const name=user.global_name || user.username || 'Discordユーザー';
+    area.innerHTML=`<div class="account-card"><img class="account-avatar" src="${discordAvatarUrl(user)}" alt="Discordアイコン"><div class="account-info"><div class="account-name" title="${escapeHtml(name)}">${escapeHtml(name)}</div><div class="account-state">ログイン中</div></div></div><button class="account-logout" onclick="discordLogout()">ログアウト</button>`;
+  }else{
+    area.innerHTML='<button class="account-login" onclick="discordLogin()">Discordでログイン</button><div class="auth-status" id="authStatus"></div>';
+  }
+}
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\'/g,'&#39;');}
 
-
-/*
- * Discordログイン開始
- */
-async function loginWithDiscord(){
-
-  if(!DISCORD_CLIENT_ID){
-
-    alert(
-      "Discord Application IDがまだ設定されていません。\n\n" +
-      "HTML内の DISCORD_CLIENT_ID に、" +
-      "Discord Developer PortalのApplication IDを設定してください。"
-    );
-
+async function discordLogin(){
+  if(DISCORD_CLIENT_ID==='YOUR_DISCORD_APPLICATION_ID'){
+    alert('Discord Application IDがまだ設定されていません。HTML内のDISCORD_CLIENT_IDに、Discord Developer PortalのApplication IDを設定してください。');
     return;
   }
-
-
-  try{
-
-    const verifier =
-      createRandomString(64);
-
-    const challenge =
-      await sha256Base64Url(verifier);
-
-    sessionStorage.setItem(
-      DISCORD_VERIFIER_KEY,
-      verifier
-    );
-
-
-    const state =
-      createRandomString(32);
-
-    sessionStorage.setItem(
-      "takulog_discord_oauth_state",
-      state
-    );
-
-
-    const params =
-      new URLSearchParams({
-
-        client_id:
-          DISCORD_CLIENT_ID,
-
-        response_type:
-          "code",
-
-        redirect_uri:
-          DISCORD_REDIRECT_URI,
-
-        scope:
-          DISCORD_SCOPE,
-
-        state:
-          state,
-
-        code_challenge:
-          challenge,
-
-        code_challenge_method:
-          "S256"
-
-      });
-
-
-    const url =
-      "https://discord.com/oauth2/authorize?" +
-      params.toString();
-
-
-    window.location.href = url;
-
-  }catch(error){
-
-    console.error(error);
-
-    alert(
-      "Discordログインの開始に失敗しました。"
-    );
-
-  }
+  const verifier=randomString(64);
+  const state=randomString(32);
+  const challenge=await sha256Base64Url(verifier);
+  sessionStorage.setItem('discord_pkce_verifier',verifier);
+  sessionStorage.setItem('discord_oauth_state',state);
+  const params=new URLSearchParams({
+    client_id:DISCORD_CLIENT_ID,
+    response_type:'code',
+    redirect_uri:DISCORD_REDIRECT_URI,
+    scope:DISCORD_SCOPE,
+    state,
+    code_challenge:challenge,
+    code_challenge_method:'S256'
+  });
+  location.href='https://discord.com/oauth2/authorize?'+params.toString();
 }
 
-
-/*
- * OAuth2の戻り値を確認
- */
 async function handleDiscordCallback(){
-
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
-
-
-  const code =
-    params.get("code");
-
-
-  const state =
-    params.get("state");
-
-
-  const error =
-    params.get("error");
-
-
+  const params=new URLSearchParams(location.search);
+  const code=params.get('code');
+  const state=params.get('state');
+  const error=params.get('error');
   if(error){
-
-    console.error(
-      "Discord OAuth error:",
-      error
-    );
-
-    updateDiscordDebug(
-      "Discord認証がキャンセルまたは失敗しました: " +
-      error
-    );
-
-    cleanOAuthUrl();
-
+    history.replaceState({},'',DISCORD_REDIRECT_URI);
+    renderAccount(null);
+    const st=document.getElementById('authStatus'); if(st)st.textContent='ログインがキャンセルされました。';
     return;
   }
-
-
-  if(!code){
+  if(!code)return;
+  const savedState=sessionStorage.getItem('discord_oauth_state');
+  const verifier=sessionStorage.getItem('discord_pkce_verifier');
+  if(!savedState || !verifier || state!==savedState){
+    alert('Discord認証の確認に失敗しました。もう一度ログインしてください。');
+    history.replaceState({},'',DISCORD_REDIRECT_URI);
     return;
   }
-
-
-  const savedState =
-    sessionStorage.getItem(
-      "takulog_discord_oauth_state"
-    );
-
-
-  if(!savedState || savedState !== state){
-
-    alert(
-      "Discord認証の確認に失敗しました。もう一度ログインしてください。"
-    );
-
-    cleanOAuthUrl();
-
-    return;
-  }
-
-
-  const verifier =
-    sessionStorage.getItem(
-      DISCORD_VERIFIER_KEY
-    );
-
-
-  if(!verifier){
-
-    alert(
-      "Discord認証情報が見つかりません。もう一度ログインしてください。"
-    );
-
-    cleanOAuthUrl();
-
-    return;
-  }
-
-
   try{
-
-    updateDiscordDebug(
-      "Discordから認証情報を取得しています……"
-    );
-
-
-    const body =
-      new URLSearchParams({
-
-        client_id:
-          DISCORD_CLIENT_ID,
-
-        grant_type:
-          "authorization_code",
-
-        code:
-          code,
-
-        redirect_uri:
-          DISCORD_REDIRECT_URI,
-
-        code_verifier:
-          verifier
-
-      });
-
-
-    const tokenResponse =
-      await fetch(
-        "https://discord.com/api/oauth2/token",
-        {
-          method:"POST",
-
-          headers:{
-            "Content-Type":
-              "application/x-www-form-urlencoded"
-          },
-
-          body:body.toString()
-        }
-      );
-
-
-    if(!tokenResponse.ok){
-
-      const errorText =
-        await tokenResponse.text();
-
-      console.error(
-        "Token exchange failed:",
-        errorText
-      );
-
-      throw new Error(
-        "Discordトークン取得に失敗しました。"
-      );
-    }
-
-
-    const tokenData =
-      await tokenResponse.json();
-
-
-    const accessToken =
-      tokenData.access_token;
-
-
-    if(!accessToken){
-
-      throw new Error(
-        "アクセストークンを取得できませんでした。"
-      );
-    }
-
-
-    /*
-     * Discord User情報を取得
-     */
-    const userResponse =
-      await fetch(
-        "https://discord.com/api/users/@me",
-        {
-          headers:{
-            Authorization:
-              "Bearer " + accessToken
-          }
-        }
-      );
-
-
-    if(!userResponse.ok){
-
-      throw new Error(
-        "Discordユーザー情報の取得に失敗しました。"
-      );
-    }
-
-
-    const user =
-      await userResponse.json();
-
-
-    /*
-     * 今回は動作確認用としてsessionStorageに保存
-     */
-    sessionStorage.setItem(
-      DISCORD_TOKEN_KEY,
-      accessToken
-    );
-
-
-    sessionStorage.setItem(
-      DISCORD_USER_KEY,
-      JSON.stringify(user)
-    );
-
-
-    sessionStorage.removeItem(
-      DISCORD_VERIFIER_KEY
-    );
-
-    sessionStorage.removeItem(
-      "takulog_discord_oauth_state"
-    );
-
-
-    updateAccountUI();
-
-    updateDiscordDebug(
-      "Discordログイン成功： " +
-      getDiscordDisplayName(user)
-    );
-
-
-    cleanOAuthUrl();
-
-
-  }catch(error){
-
-    console.error(error);
-
-    updateDiscordDebug(
-      "Discordログインに失敗しました: " +
-      error.message
-    );
-
-    alert(
-      "Discordログインに失敗しました。\n\n" +
-      error.message
-    );
-
-    cleanOAuthUrl();
-
+    const body=new URLSearchParams({
+      client_id:DISCORD_CLIENT_ID,
+      grant_type:'authorization_code',
+      code,
+      redirect_uri:DISCORD_REDIRECT_URI,
+      code_verifier:verifier
+    });
+    const tokenRes=await fetch(DISCORD_API+'/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    if(!tokenRes.ok)throw new Error('token');
+    const token=await tokenRes.json();
+    const userRes=await fetch(DISCORD_API+'/users/@me',{headers:{Authorization:'Bearer '+token.access_token}});
+    if(!userRes.ok)throw new Error('user');
+    const user=await userRes.json();
+    sessionStorage.setItem('discord_access_token',token.access_token);
+    sessionStorage.setItem('discord_user',JSON.stringify(user));
+    renderAccount(user);
+  }catch(e){
+    console.error(e);
+    alert('Discordログインに失敗しました。Discord Developer PortalのPublic Client設定とリダイレクトURLを確認してください。');
+    renderAccount(null);
+  }finally{
+    sessionStorage.removeItem('discord_pkce_verifier');
+    sessionStorage.removeItem('discord_oauth_state');
+    history.replaceState({},'',DISCORD_REDIRECT_URI);
   }
-
 }
-
-
-/*
- * Discord表示名取得
- */
-function getDiscordDisplayName(user){
-
-  if(user.global_name){
-    return user.global_name;
-  }
-
-  if(user.username){
-    return user.username;
-  }
-
-  return "Discordユーザー";
+function discordLogout(){
+  sessionStorage.removeItem('discord_access_token');
+  sessionStorage.removeItem('discord_user');
+  renderAccount(null);
 }
-
-
-/*
- * DiscordアイコンURL
- */
-function getDiscordAvatarUrl(user){
-
-  if(
-    user.avatar &&
-    user.id
-  ){
-
-    const extension =
-      user.avatar.startsWith("a_")
-        ? "gif"
-        : "png";
-
-    return (
-      "https://cdn.discordapp.com/avatars/" +
-      user.id +
-      "/" +
-      user.avatar +
-      "." +
-      extension +
-      "?size=128"
-    );
-  }
-
-
-  /*
-   * Discordのデフォルトアバター
-   */
-  const index =
-    Number(BigInt(user.id || "0") >> 22n) % 6;
-
-  return (
-    "https://cdn.discordapp.com/embed/avatars/" +
-    index +
-    ".png"
-  );
-}
-
-
-/*
- * ログアウト
- */
-function logoutDiscord(){
-
-  sessionStorage.removeItem(
-    DISCORD_TOKEN_KEY
-  );
-
-  sessionStorage.removeItem(
-    DISCORD_USER_KEY
-  );
-
-  sessionStorage.removeItem(
-    DISCORD_VERIFIER_KEY
-  );
-
-  sessionStorage.removeItem(
-    "takulog_discord_oauth_state"
-  );
-
-
-  updateAccountUI();
-
-  updateDiscordDebug(
-    "ログアウトしました。"
-  );
-
-}
-
-
-/*
- * URLからOAuth用パラメータを除去
- */
-function cleanOAuthUrl(){
-
-  const cleanUrl =
-    window.location.origin +
-    window.location.pathname;
-
-  window.history.replaceState(
-    {},
-    document.title,
-    cleanUrl
-  );
-}
-
-
-/*
- * アカウント表示更新
- */
-function updateAccountUI(){
-
-  const loginButton =
-    document.getElementById("loginButton");
-
-  const accountUser =
-    document.getElementById("accountUser");
-
-  const logoutButton =
-    document.getElementById("logoutButton");
-
-  const avatar =
-    document.getElementById("accountAvatar");
-
-  const name =
-    document.getElementById("accountName");
-
-
-  const savedUser =
-    sessionStorage.getItem(
-      DISCORD_USER_KEY
-    );
-
-
-  if(!savedUser){
-
-    loginButton.style.display =
-      "block";
-
-    accountUser.style.display =
-      "none";
-
-    logoutButton.style.display =
-      "none";
-
-    return;
-  }
-
-
+function restoreDiscordSession(){
   try{
-
-    const user =
-      JSON.parse(savedUser);
-
-
-    loginButton.style.display =
-      "none";
-
-    accountUser.style.display =
-      "flex";
-
-    logoutButton.style.display =
-      "block";
-
-
-    name.textContent =
-      getDiscordDisplayName(user);
-
-
-    avatar.src =
-      getDiscordAvatarUrl(user);
-
-  }catch(error){
-
-    console.error(error);
-
-    loginButton.style.display =
-      "block";
-
-    accountUser.style.display =
-      "none";
-
-    logoutButton.style.display =
-      "none";
-  }
-
+    const user=JSON.parse(sessionStorage.getItem('discord_user')||'null');
+    renderAccount(user);
+  }catch(e){renderAccount(null);}
 }
-
-
-/*
- * デバッグ表示
- */
-function updateDiscordDebug(message){
-
-  const element =
-    document.getElementById(
-      "discordDebugStatus"
-    );
-
-  if(element){
-    element.textContent =
-      message;
-  }
-
-}
-
-
-/* =========================================================
-   元の卓ログ機能
-   ========================================================= */
 
 const legal={
-
-terms:{
-title:"利用規約",
-
-body:'<p class="p1"><span class="s1">利用規約</span></p><p class="p2"><span class="s2">第1条（本サービスについて）</span></p><p class="p3"><span class="s3">「卓ログ」は、TRPG等のシナリオについて、募集、参加希望、参加者管理、キャラクター情報の管理および開催可能日の確認等を行うためのサービスです。</span></p><p class="p3"><span class="s3">本サービスでは、特定のユーザーを固定的に「GM」または「PL」として扱わず、シナリオごとに作成者または参加者として利用します。</span></p><p class="p2"><span class="s2">第2条（Discordアカウントによるログイン）</span></p><p class="p3"><span class="s3">本サービスではDiscordのアカウントを利用した認証を行います。ログイン時にDiscordから取得したユーザー情報を、本サービスにおけるユーザーの識別および表示のために利用します。</span></p><p class="p2"><span class="s2">第3条（ユーザーの責任）</span></p><p class="p3"><span class="s3">ユーザーは、他のユーザーへのなりすまし、不正アクセス、虚偽情報の登録、サービス運営の妨害、他のユーザーへの迷惑行為、法令または公序良俗に反する行為を行ってはいけません。</span></p><p class="p2"><span class="s2">第4条（シナリオおよびキャラクター情報）</span></p><p class="p3"><span class="s3">ユーザーが登録するシナリオ情報、キャラクター名、キャラクターシートへのリンク、コメント等については、ユーザー自身が責任をもって登録してください。外部サービスを利用する場合は、そのサービスの利用規約等にも従ってください。</span></p><p class="p2"><span class="s2">第5条（シナリオの管理）</span></p><p class="p3"><span class="s3">シナリオ作成者には、そのシナリオに関する管理権限が付与されます。作成者は参加者の参加を取り消すことができます。参加者自身や他の参加者は、他人の参加を取り消すことはできません。</span></p><p class="p2"><span class="s2">第6条（サービスの変更・停止）</span></p><p class="p3"><span class="s3">運営者は、保守、障害、セキュリティ上の理由、外部サービスの仕様変更その他必要と判断した場合、本サービスの全部または一部を変更、停止または終了することがあります。</span></p><p class="p2"><span class="s2">第7条（免責事項）</span></p><p class="p3"><span class="s3">運営者は、本サービスの完全性、正確性、継続性または特定目的への適合性を保証するものではありません。外部サービス等の事情により機能が利用できなくなる場合があります。</span></p><p class="p2"><span class="s2">第8条（利用規約の変更）</span></p><p class="p3"><span class="s3">運営者は必要に応じて本規約を変更することがあります。変更後の規約は、本サービス上で公開した時点または別途定めた時点から効力を生じます。</span></p><p class="p2"><span class="s2">第9条（準拠法）</span></p><p class="p3"><span class="s3">本規約は日本法に準拠して解釈されます。</span></p><p class="p2"><span class="s2">第10条（お問い合わせ）</span></p><p class="p3"><span class="s3">お問い合わせ：umineko／laidouxichuan@gmail.com</span></p>'
-},
-
-privacy:{
-title:"プライバシーポリシー",
-
-body:"<p class=\"p1\"><span class=\"s1\">プライバシーポリシー</span></p><p class=\"p2\"><span class=\"s2\">最終更新日：2026年8月31日</span></p><p class=\"p3\"><span class=\"s3\">1. 取得する情報</span></p><p class=\"p2\"><span class=\"s2\">Discordによるログインに伴い、Discord User ID、Discordユーザー名・表示名等のアカウント情報を取得する場合があります。また、シナリオ名、概要、使用システム、定員、キャラクター名、キャラクターシートURL、コメント、参加情報、通知の確認状況等を取り扱います。</span></p><p class=\"p3\"><span class=\"s3\">2. 利用目的</span></p><p class=\"p2\"><span class=\"s2\">取得した情報は、ログインおよびユーザー識別、シナリオの作成・管理、参加管理、キャラクター情報の表示、開催可能日の確認、更新情報・通知の提供、既読・未読状態の管理、本サービスの運営・改善、不正利用や不具合への対応のために利用します。</span></p><p class=\"p3\"><span class=\"s3\">3. Discordについて</span></p><p class=\"p2\"><span class=\"s2\">本サービスではユーザー認証のためDiscordのOAuth2認証機能を利用します。Discordのサービスについては、Discord側の利用規約およびプライバシーポリシーも適用されます。</span></p><p class=\"p3\"><span class=\"s3\">4. 第三者提供</span></p><p class=\"p2\"><span class=\"s2\">運営者は、法令に基づく場合等を除き、ユーザーの情報を本人の同意なく第三者へ提供しません。ただし、本サービスの提供に必要な外部サービスを利用する場合、そのサービスに必要な範囲で情報が取り扱われることがあります。</span></p><p class=\"p3\"><span class=\"s3\">5. 情報の管理</span></p><p class=\"p2\"><span class=\"s2\">運営者は、取得した情報について、不正アクセス、紛失、漏えい等を防止するため、適切な管理に努めます。</span></p><p class=\"p3\"><span class=\"s3\">6. ユーザーによる情報の変更</span></p><p class=\"p2\"><span class=\"s2\">ユーザーが登録したキャラクター情報等は、本サービスが提供する機能の範囲内で変更できます。Discordアカウントに由来するユーザー識別情報は、本サービス上から変更できない場合があります。</span></p><p class=\"p3\"><span class=\"s3\">7. 情報の削除</span></p><p class=\"p2\"><span class=\"s2\">ユーザーから自身の情報の削除等について申し出があった場合、本人確認等を行ったうえで、可能な範囲で対応します。</span></p><p class=\"p3\"><span class=\"s3\">8. ポリシーの変更</span></p><p class=\"p2\"><span class=\"s2\">運営者は必要に応じて本プライバシーポリシーを変更することがあります。変更後のポリシーは、本サービス上で公開した時点または別途定めた時点から効力を生じます。</span></p><p class=\"p3\"><span class=\"s3\">9. お問い合わせ</span></p><p class=\"p2\"><span class=\"s2\">お問い合わせ：umineko／laidouxichuan@gmail.com</span></p>"
-}
+terms:{title:"利用規約",body:'<p class="p1"><span class="s1">利用規約</span></p><p class="p2"><span class="s2">第1条（本サービスについて）</span></p><p class="p3"><span class="s3">「卓ログ」は、TRPG等のシナリオについて、募集、参加希望、参加者管理、キャラクター情報の管理および開催可能日の確認等を行うためのサービスです。</span></p><p class="p3"><span class="s3">本サービスでは、特定のユーザーを固定的に「GM」または「PL」として扱わず、シナリオごとに作成者または参加者として利用します。</span></p><p class="p2"><span class="s2">第2条（Discordアカウントによるログイン）</span></p><p class="p3"><span class="s3">本サービスではDiscordのアカウントを利用した認証を行います。ログイン時にDiscordから取得したユーザー情報を、本サービスにおけるユーザーの識別および表示のために利用します。</span></p><p class="p2"><span class="s2">第3条（ユーザーの責任）</span></p><p class="p3"><span class="s3">ユーザーは、他のユーザーへのなりすまし、不正アクセス、虚偽情報の登録、サービス運営の妨害、他のユーザーへの迷惑行為、法令または公序良俗に反する行為を行ってはいけません。</span></p><p class="p2"><span class="s2">第4条（シナリオおよびキャラクター情報）</span></p><p class="p3"><span class="s3">ユーザーが登録するシナリオ情報、キャラクター名、キャラクターシートへのリンク、コメント等については、ユーザー自身が責任をもって登録してください。外部サービスを利用する場合は、そのサービスの利用規約等にも従ってください。</span></p><p class="p2"><span class="s2">第5条（シナリオの管理）</span></p><p class="p3"><span class="s3">シナリオ作成者には、そのシナリオに関する管理権限が付与されます。作成者は参加者の参加を取り消すことができます。参加者自身や他の参加者は、他人の参加を取り消すことはできません。</span></p><p class="p2"><span class="s2">第6条（サービスの変更・停止）</span></p><p class="p3"><span class="s3">運営者は、保守、障害、セキュリティ上の理由、外部サービスの仕様変更その他必要と判断した場合、本サービスの全部または一部を変更、停止または終了することがあります。</span></p><p class="p2"><span class="s2">第7条（免責事項）</span></p><p class="p3"><span class="s3">運営者は、本サービスの完全性、正確性、継続性または特定目的への適合性を保証するものではありません。外部サービス等の事情により機能が利用できなくなる場合があります。</span></p><p class="p2"><span class="s2">第8条（利用規約の変更）</span></p><p class="p3"><span class="s3">運営者は必要に応じて本規約を変更することがあります。変更後の規約は、本サービス上で公開した時点または別途定めた時点から効力を生じます。</span></p><p class="p2"><span class="s2">第9条（準拠法）</span></p><p class="p3"><span class="s3">本規約は日本法に準拠して解釈されます。</span></p><p class="p2"><span class="s2">第10条（お問い合わせ）</span></p><p class="p3"><span class="s3">お問い合わせ：umineko／laidouxichuan@gmail.com</span></p>'},
+privacy:{title:"プライバシーポリシー",body:'<p class="p1"><span class="s1">プライバシーポリシー</span></p><p class="p2"><span class="s2">1. 取得する情報</span></p><p class="p3"><span class="s3">Discordによるログインに伴い、Discord User ID、Discordユーザー名・表示名等のアカウント情報を取得する場合があります。また、シナリオ名、概要、使用システム、定員、キャラクター名、キャラクターシートURL、コメント、参加情報、通知の確認状況等を取り扱います。</span></p><p class="p2"><span class="s2">2. 利用目的</span></p><p class="p3"><span class="s3">取得した情報は、ログインおよびユーザー識別、シナリオの作成・管理、参加管理、キャラクター情報の表示、開催可能日の確認、更新情報・通知の提供、既読・未読状態の管理、本サービスの運営・改善、不正利用や不具合への対応のために利用します。</span></p><p class="p2"><span class="s2">3. Discordについて</span></p><p class="p3"><span class="s3">本サービスではユーザー認証のためDiscordのOAuth2認証機能を利用します。Discordのサービスについては、Discord側の利用規約およびプライバシーポリシーも適用されます。</span></p><p class="p2"><span class="s2">4. 第三者提供</span></p><p class="p3"><span class="s3">運営者は、法令に基づく場合等を除き、ユーザーの情報を本人の同意なく第三者へ提供しません。ただし、本サービスの提供に必要な外部サービスを利用する場合、そのサービスに必要な範囲で情報が取り扱われることがあります。</span></p><p class="p2"><span class="s2">5. 情報の管理</span></p><p class="p3"><span class="s3">運営者は、取得した情報について、不正アクセス、紛失、漏えい等を防止するため、適切な管理に努めます。</span></p><p class="p2"><span class="s2">6. ユーザーによる情報の変更</span></p><p class="p3"><span class="s3">ユーザーが登録したキャラクター情報等は、本サービスが提供する機能の範囲内で変更できます。Discordアカウントに由来するユーザー識別情報は、本サービス上から変更できない場合があります。</span></p><p class="p2"><span class="s2">7. 情報の削除</span></p><p class="p3"><span class="s3">ユーザーから自身の情報の削除等について申し出があった場合、本人確認等を行ったうえで、可能な範囲で対応します。</span></p><p class="p2"><span class="s2">8. ポリシーの変更</span></p><p class="p3"><span class="s3">運営者は必要に応じて本プライバシーポリシーを変更することがあります。変更後のポリシーは、本サービス上で公開した時点または別途定めた時点から効力を生じます。</span></p><p class="p2"><span class="s2">9. お問い合わせ</span></p><p class="p3"><span class="s3">お問い合わせ：umineko／laidouxichuan@gmail.com</span></p>'}
 };
-
-
-function toggleSidebar(){
-  document
-    .getElementById("sidebar")
-    .classList
-    .toggle("collapsed");
-}
-
-
+function toggleSidebar(){document.getElementById("sidebar").classList.toggle("collapsed")}
 function home(btn){
-
-  document
-    .querySelectorAll(".nav button")
-    .forEach(b=>b.classList.remove("active"));
-
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
-
-  document
-    .getElementById("pageTitle")
-    .textContent="ホーム";
-
-  document
-    .getElementById("chatPaletteOutputPage")
-    .style.display="none";
-
-  document
-    .getElementById("palettePage")
-    .style.display="none";
-
-  document
-    .getElementById("homeRecruit")
-    .style.display="block";
-
-  document
-    .querySelector(".create")
-    .style.display="block";
-
-  document
-    .querySelector(".calendar-card")
-    .style.display="block";
+  document.getElementById("pageTitle").textContent="ホーム";
+  document.getElementById("chatPaletteOutputPage").style.display="none";
+  document.getElementById("palettePage").style.display="none";
+  document.getElementById("daycodePage").style.display="none";
+  document.getElementById("scheduleCreatePage").style.display="none";
+  document.getElementById("scheduleManagePage").style.display="none";
+  document.getElementById("scheduleApplyPage").style.display="none";
+  document.getElementById("scheduleJoinedPage").style.display="none";
+  document.getElementById("homeRecruit").style.display="block";
+  document.querySelector(".create").style.display="block";
+  document.querySelector(".calendar-card").style.display="block";
+  renderHomeRecruit();
 }
-
-
 function placeholder(btn){
-
-  document
-    .querySelectorAll(".nav button")
-    .forEach(b=>b.classList.remove("active"));
-
+  if(!btn)return;
+  if(btn.dataset.page==="シナリオ予定作成"){scenarioSchedulePage(btn);return}
+  if(btn.dataset.page==="予定作成済みシナリオ"){scheduleManagePage(btn);return}
+  if(btn.dataset.page==="参加希望済みシナリオ"){scheduleJoinedPage(btn);return}
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
-
-  document
-    .getElementById("pageTitle")
-    .textContent=btn.dataset.page;
-
-  document
-    .getElementById("chatPaletteOutputPage")
-    .style.display="none";
-
-  document
-    .getElementById("palettePage")
-    .style.display="none";
-
-  document
-    .getElementById("homeRecruit")
-    .style.display="block";
-
-  document
-    .querySelector(".create")
-    .style.display="block";
-
-  document
-    .querySelector(".calendar-card")
-    .style.display="block";
-
-  alert(
-    btn.dataset.page +
-    " は現在、機能を実装していません。\n" +
-    "ページ構成のみ用意しています。"
-  );
+  document.getElementById("pageTitle").textContent=btn.dataset.page;
+  document.getElementById("chatPaletteOutputPage").style.display="none";
+  document.getElementById("palettePage").style.display="none";
+  document.getElementById("daycodePage").style.display="none";
+  document.getElementById("scheduleCreatePage").style.display="none";
+  document.getElementById("scheduleManagePage").style.display="none";
+  document.getElementById("scheduleApplyPage").style.display="none";
+  document.getElementById("scheduleJoinedPage").style.display="none";
+  document.getElementById("homeRecruit").style.display="block";
+  document.querySelector(".create").style.display="block";
+  document.querySelector(".calendar-card").style.display="block";
+  alert(btn.dataset.page+" は現在、機能を実装していません。\nページ構成のみ用意しています。");
 }
 
+/* ===== シナリオ予定管理 ===== */
+const SCENARIO_KEY="takulog_scenario_schedules_v1";
+let scenarioSchedules=scenarioLoad();
+let scenarioEditingId=null;
+let scenarioApplyId=null;
 
-function openLegal(type){
-
-  document
-    .getElementById("modalTitle")
-    .textContent=legal[type].title;
-
-  document
-    .getElementById("modalBody")
-    .innerHTML=legal[type].body;
-
-  document
-    .getElementById("modal")
-    .classList
-    .add("open");
+function scenarioLoad(){
+  try{
+    const v=JSON.parse(localStorage.getItem(SCENARIO_KEY)||"[]");
+    return Array.isArray(v)?v:[];
+  }catch(e){return []}
 }
-
-
-function closeLegal(){
-
-  document
-    .getElementById("modal")
-    .classList
-    .remove("open");
+function scenarioSave(){localStorage.setItem(SCENARIO_KEY,JSON.stringify(scenarioSchedules))}
+function currentDiscordUser(){
+  try{return JSON.parse(sessionStorage.getItem("discord_user")||"null")}catch(e){return null}
 }
+function currentUserId(){return currentDiscordUser()?.id||""}
+function currentUserName(){
+  const u=currentDiscordUser();
+  return u ? (u.global_name||u.username||"Discordユーザー") : "未ログイン";
+}
+function scenarioEscape(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function scenarioSystemValue(){
+  const v=document.getElementById("scheduleSystem").value;
+  return v==="その他" ? document.getElementById("scheduleOtherSystem").value.trim() : v;
+}
+function scheduleCapacity(s){
+  return s.capacityMode==="range" ? `${s.capacityMin}～${s.capacityMax}人` : `${s.capacityExact}人`;
+}
+function scheduleMax(s){return s.capacityMode==="range"?Number(s.capacityMax):Number(s.capacityExact)}
+function scheduleMin(s){return s.capacityMode==="range"?Number(s.capacityMin):Number(s.capacityExact)}
+function scheduleRemaining(s){return Math.max(0,scheduleMax(s)-s.participants.length)}
+function scheduleRangeText(s){return s.capacityMode==="range"?`${scheduleMin(s)}～${scheduleMax(s)}`:String(scheduleMax(s))}
+function isScenarioOwner(s){return s.ownerId===currentUserId()}
+function isScenarioParticipant(s){return s.participants.some(p=>p.userId===currentUserId())}
+function participantOf(s){return s.participants.find(p=>p.userId===currentUserId())}
 
-
-function backdrop(e){
-
-  if(e.target.id==="modal"){
-    closeLegal();
+function showOnlySchedule(id){
+  const ids=["scheduleCreatePage","scheduleManagePage","scheduleApplyPage","scheduleJoinedPage","chatPaletteOutputPage","palettePage","daycodePage"];
+  ids.forEach(x=>{const e=document.getElementById(x);if(e)e.style.display=(x===id?"block":"none")});
+  document.getElementById("homeRecruit").style.display="none";
+  document.querySelector(".create").style.display="none";
+  document.querySelector(".calendar-card").style.display="none";
+}
+function activateNav(btn,title){
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  if(btn)btn.classList.add("active");
+  document.getElementById("pageTitle").textContent=title;
+}
+function scenarioSchedulePage(btn){
+  activateNav(btn,"シナリオ予定作成");
+  showOnlySchedule("scheduleCreatePage");
+  scenarioEditingId=null;
+  resetScheduleForm();
+}
+function scheduleManagePage(btn){
+  activateNav(btn,"予定作成済みシナリオ");
+  showOnlySchedule("scheduleManagePage");
+  renderScheduleManage();
+}
+function scheduleJoinedPage(btn){
+  activateNav(btn,"参加希望済みシナリオ");
+  showOnlySchedule("scheduleJoinedPage");
+  renderJoinedSchedules();
+}
+function resetScheduleForm(){
+  const u=currentDiscordUser();
+  document.getElementById("scheduleFormTitle").textContent="シナリオ予定作成";
+  document.getElementById("scheduleKP").value=currentUserName();
+  document.getElementById("scheduleTitle").value="";
+  document.getElementById("scheduleSystem").value="";
+  document.getElementById("scheduleOtherSystem").value="";
+  document.getElementById("scheduleOtherSystem").style.display="none";
+  document.getElementById("scheduleCapacityMode").value="range";
+  document.getElementById("scheduleCapacityMin").value="";
+  document.getElementById("scheduleCapacityMax").value="";
+  document.getElementById("scheduleCapacityExact").value="";
+  document.getElementById("scheduleDescription").value="";
+  document.getElementById("scheduleCocofolia").value="";
+  document.getElementById("scheduleConfirmedCount").value="";
+  document.getElementById("confirmedInputs").innerHTML="";
+  toggleCapacityFields();
+  renderConfirmedInputs();
+}
+function toggleOtherSystem(){
+  document.getElementById("scheduleOtherSystem").style.display=document.getElementById("scheduleSystem").value==="その他"?"block":"none";
+}
+function toggleCapacityFields(){
+  const range=document.getElementById("scheduleCapacityMode").value==="range";
+  document.getElementById("capacityRangeFields").style.display=range?"grid":"none";
+  document.getElementById("scheduleCapacityExact").style.display=range?"none":"block";
+}
+function discordKnownUsers(){
+  // Prototype: previously registered users are collected from local scenario data.
+  // The current login account is always excluded from confirmed-participant choices.
+  const map=new Map();
+  scenarioSchedules.forEach(s=>{
+    const owner={id:s.ownerId,name:s.ownerName};
+    if(owner.id)map.set(owner.id,owner);
+    s.participants.forEach(p=>{if(p.userId)map.set(p.userId,{id:p.userId,name:p.userName})});
+  });
+  return [...map.values()].filter(u=>u.id!==currentUserId());
+}
+function renderConfirmedInputs(){
+  const box=document.getElementById("confirmedInputs");
+  const n=Math.max(0,Math.min(20,Number(document.getElementById("scheduleConfirmedCount").value)||0));
+  const old=[...box.querySelectorAll(".confirmed-item")].map(x=>({
+    user:x.querySelector(".confirmed-user")?.value||"",
+    char:x.querySelector(".confirmed-char")?.value||"",
+    url:x.querySelector(".confirmed-url")?.value||""
+  }));
+  box.innerHTML="";
+  const users=discordKnownUsers();
+  for(let i=0;i<n;i++){
+    const data=old[i]||{};
+    const item=document.createElement("div");item.className="confirmed-item";
+    const options=users.map(u=>`<option value="${scenarioEscape(u.id)}">${scenarioEscape(u.name)}</option>`).join("");
+    item.innerHTML=`
+      <div class="confirmed-item-title">確定参加者 ${i+1}</div>
+      <select class="confirmed-user"><option value="">Discordユーザーを選択</option>${options}</select>
+      <input class="confirmed-char" type="text" placeholder="確定参加者のキャラクター名（任意）" value="${scenarioEscape(data.char)}" style="margin-top:8px">
+      <input class="confirmed-url" type="url" placeholder="確定参加者のいあきゃらURL（任意）" value="${scenarioEscape(data.url)}" style="margin-top:8px">
+    `;
+    box.appendChild(item);
+    if(data.user) item.querySelector(".confirmed-user").value=data.user;
   }
-
+}
+function collectConfirmed(){
+  return [...document.querySelectorAll(".confirmed-item")].map(x=>{
+    const select=x.querySelector(".confirmed-user");
+    const userId=select.value;
+    const userName=select.options[select.selectedIndex]?.textContent||"";
+    return {
+      userId,userName,
+      characterName:x.querySelector(".confirmed-char").value.trim(),
+      iacharaUrl:x.querySelector(".confirmed-url").value.trim(),
+      other:"",
+      isConfirmed:true
+    };
+  }).filter(p=>p.userId);
+}
+function saveScenarioSchedule(){
+  if(!currentUserId()){alert("予定を作成するにはDiscordでログインしてください。");return}
+  const title=document.getElementById("scheduleTitle").value.trim();
+  const system=scenarioSystemValue();
+  const mode=document.getElementById("scheduleCapacityMode").value;
+  const min=Number(document.getElementById("scheduleCapacityMin").value);
+  const max=Number(document.getElementById("scheduleCapacityMax").value);
+  const exact=Number(document.getElementById("scheduleCapacityExact").value);
+  const cocofolia=document.getElementById("scheduleCocofolia").value.trim();
+  if(!title||!system||!cocofolia){alert("シナリオ名・システム・ココフォリアURLを入力してください。");return}
+  if(mode==="range" && (!min||!max||min<1||max<min)){alert("定員の下限・上限を正しく入力してください。");return}
+  if(mode==="exact" && (!exact||exact<1)){alert("定員を正しく入力してください。");return}
+  const confirmed=collectConfirmed();
+  const capacity=mode==="range"?max:exact;
+  if(confirmed.length>capacity){alert("確定参加者の人数が定員を超えています。");return}
+  const s={
+    id:scenarioEditingId||("scenario-"+Date.now()+"-"+Math.random().toString(36).slice(2)),
+    ownerId:currentUserId(),
+    ownerName:currentUserName(),
+    title,system,
+    capacityMode:mode,
+    capacityMin:mode==="range"?min:null,
+    capacityMax:mode==="range"?max:null,
+    capacityExact:mode==="exact"?exact:null,
+    description:document.getElementById("scheduleDescription").value.trim(),
+    cocofolia,
+    createdAt:Date.now(),
+    status:"recruiting",
+    participants:confirmed
+  };
+  if(scenarioEditingId){
+    const idx=scenarioSchedules.findIndex(x=>x.id===scenarioEditingId);
+    if(idx>=0)scenarioSchedules[idx]=s;
+  }else scenarioSchedules.push(s);
+  scenarioSave();
+  alert("シナリオ予定を作成しました。");
+  home(document.querySelector('[data-page="ホーム"]'));
+}
+function renderScheduleCard(s,mode="home"){
+  const owner=isScenarioOwner(s);
+  const me=participantOf(s);
+  const rows=s.participants.map(p=>{
+    const own=p.userId===currentUserId();
+    return `<div class="participant-row">
+      <span class="participant-name">${scenarioEscape(p.userName)}</span>
+      ${p.characterName?`<span class="char">（${scenarioEscape(p.characterName)}）</span>`:""}
+      ${p.iacharaUrl?`<a class="schedule-link" href="${scenarioEscape(p.iacharaUrl)}" target="_blank" rel="noopener">いあきゃら</a>`:""}
+      ${own?`<button onclick="openScheduleApply('${s.id}',true)">内容変更</button>`:""}
+      ${owner?`<button class="danger-action" onclick="cancelScenarioParticipant('${s.id}','${p.userId}')">参加取り消し</button>`:""}
+    </div>`;
+  }).join("");
+  const canJoin=!owner&&!me&&scheduleRemaining(s)>0&&s.status==="recruiting";
+  return `<section class="card schedule-card">
+    <div class="schedule-card-head">
+      <div>
+        <h3>${scenarioEscape(s.title)}</h3>
+        <div class="schedule-meta">${scenarioEscape(s.system)}　｜　定員 ${scheduleRangeText(s)}　｜　残り募集人数 ${scheduleRemaining(s)}人</div>
+      </div>
+      <div class="schedule-meta">${owner?"作成者：あなた":"KP："+scenarioEscape(s.ownerName)}</div>
+    </div>
+    ${s.description?`<div class="schedule-description">${scenarioEscape(s.description)}</div>`:""}
+    <div class="schedule-participants">
+      ${rows||'<div class="empty">現在、参加者はいません。</div>'}
+    </div>
+    <div class="schedule-meta" style="margin-top:12px">その他${s.participants.length?`：${s.participants.length}人`:""}</div>
+    <div class="schedule-actions">
+      ${s.cocofolia?`<a class="schedule-link" href="${scenarioEscape(s.cocofolia)}" target="_blank" rel="noopener">ココフォリア</a>`:""}
+      ${canJoin?`<button class="primary-action" onclick="openScheduleApply('${s.id}',false)">シナリオに参加する</button>`:""}
+      ${owner?`<button onclick="editScenarioSchedule('${s.id}')">内容変更</button>`:""}
+      ${owner?`<button onclick="finalizeScenarioDate('${s.id}')">日程確定</button>`:""}
+    </div>
+  </section>`;
+}
+function renderHomeRecruit(){
+  const box=document.getElementById("homeRecruit");
+  const list=scenarioSchedules.filter(s=>s.status==="recruiting"&&!isScenarioOwner(s)&&!isScenarioParticipant(s));
+  box.innerHTML=`<h2 class="section-title">参加者募集中シナリオ</h2>`+
+    (list.length?list.map(s=>renderScheduleCard(s)).join(""):'<div class="empty">現在、参加者を募集中のシナリオはありません。</div>');
+}
+function renderScheduleManage(){
+  const box=document.getElementById("scheduleManageList");
+  const list=scenarioSchedules.filter(s=>isScenarioOwner(s));
+  box.innerHTML=list.length?list.map(s=>renderScheduleCard(s,"manage")).join(""):'<div class="empty">予定作成済みのシナリオはありません。</div>';
+}
+function renderJoinedSchedules(){
+  const box=document.getElementById("scheduleJoinedList");
+  const list=scenarioSchedules.filter(s=>isScenarioParticipant(s));
+  box.innerHTML=list.length?list.map(s=>renderScheduleCard(s,"joined")).join(""):'<div class="empty">参加希望済みのシナリオはありません。</div>';
+}
+function openScheduleApply(id,isEdit){
+  const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
+  const p=participantOf(s);
+  scenarioApplyId=id;
+  document.getElementById("scheduleApplyTitle").textContent=isEdit?"参加内容を変更":"シナリオに参加する";
+  document.getElementById("scheduleApplyUser").value=currentUserName();
+  document.getElementById("scheduleApplyCharacter").value=p?.characterName||"";
+  document.getElementById("scheduleApplyIachara").value=p?.iacharaUrl||"";
+  document.getElementById("scheduleApplyOther").value=p?.other||"";
+  activateNav(null,isEdit?"参加内容を変更":"シナリオに参加する");
+  showOnlySchedule("scheduleApplyPage");
+}
+function cancelScheduleApply(){
+  scenarioApplyId=null;
+  scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
+}
+function saveScenarioParticipant(){
+  const s=scenarioSchedules.find(x=>x.id===scenarioApplyId);if(!s)return;
+  if(!currentUserId()){alert("Discordでログインしてください。");return}
+  const characterName=document.getElementById("scheduleApplyCharacter").value.trim();
+  const iacharaUrl=document.getElementById("scheduleApplyIachara").value.trim();
+  const other=document.getElementById("scheduleApplyOther").value.trim();
+  if(!characterName){alert("キャラクター名を入力してください。");return}
+  const existing=s.participants.find(p=>p.userId===currentUserId());
+  if(existing){
+    existing.characterName=characterName;existing.iacharaUrl=iacharaUrl;existing.other=other;
+  }else{
+    if(scheduleRemaining(s)<=0){alert("募集人数に空きがありません。");return}
+    s.participants.push({userId:currentUserId(),userName:currentUserName(),characterName,iacharaUrl,other,isConfirmed:false});
+  }
+  scenarioSave();
+  alert(existing?"参加内容を変更しました。":"シナリオへの参加希望を登録しました。");
+  scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
+}
+function cancelScenarioParticipant(id,userId){
+  const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
+  if(!isScenarioOwner(s)){alert("参加の取り消しは予定作成者のみ行えます。");return}
+  const p=s.participants.find(x=>x.userId===userId);if(!p)return;
+  if(!confirm(`${p.userName}さんの参加を取り消しますか？`))return;
+  s.participants=s.participants.filter(x=>x.userId!==userId);
+  s.status="recruiting";
+  scenarioSave();renderScheduleManage();renderHomeRecruit();
+}
+function editScenarioSchedule(id){
+  const s=scenarioSchedules.find(x=>x.id===id);if(!s||!isScenarioOwner(s))return;
+  scenarioEditingId=id;
+  document.getElementById("scheduleFormTitle").textContent="シナリオ予定の内容変更";
+  document.getElementById("scheduleKP").value=currentUserName();
+  document.getElementById("scheduleTitle").value=s.title;
+  document.getElementById("scheduleSystem").value=["6版","7版"].includes(s.system)?s.system:"その他";
+  document.getElementById("scheduleOtherSystem").value=["6版","7版"].includes(s.system)?"":s.system;
+  document.getElementById("scheduleCapacityMode").value=s.capacityMode;
+  document.getElementById("scheduleCapacityMin").value=s.capacityMin||"";
+  document.getElementById("scheduleCapacityMax").value=s.capacityMax||"";
+  document.getElementById("scheduleCapacityExact").value=s.capacityExact||"";
+  document.getElementById("scheduleDescription").value=s.description||"";
+  document.getElementById("scheduleCocofolia").value=s.cocofolia||"";
+  const confirmed=s.participants.filter(p=>p.isConfirmed);
+  document.getElementById("scheduleConfirmedCount").value=confirmed.length||"";
+  toggleOtherSystem();toggleCapacityFields();renderConfirmedInputs();
+  setTimeout(()=>confirmed.forEach((p,i)=>{
+    const item=document.querySelectorAll(".confirmed-item")[i];if(!item)return;
+    item.querySelector(".confirmed-user").value=p.userId;
+    item.querySelector(".confirmed-char").value=p.characterName||"";
+    item.querySelector(".confirmed-url").value=p.iacharaUrl||"";
+  }),0);
+  activateNav(document.querySelector('[data-page="予定作成済みシナリオ"]'),"シナリオ予定の内容変更");
+  showOnlySchedule("scheduleCreatePage");
+}
+function finalizeScenarioDate(id){
+  const s=scenarioSchedules.find(x=>x.id===id);if(!s||!isScenarioOwner(s))return;
+  const value=prompt("確定した開催日時を入力してください。例：2026/10/10 20:00");
+  if(value===null)return;
+  s.finalDate=value.trim();
+  s.status="scheduled";
+  scenarioSave();
+  alert(s.finalDate?"日程を確定しました。":"日程確定を取り消しました。");
+  renderScheduleManage();renderHomeRecruit();
+}
+function cancelScheduleForm(){
+  scenarioEditingId=null;
+  home(document.querySelector('[data-page="ホーム"]'));
+}
+function renderAllScenarioData(){
+  renderHomeRecruit();
 }
 
+function openLegal(type){document.getElementById("modalTitle").textContent=legal[type].title;document.getElementById("modalBody").innerHTML=legal[type].body;document.getElementById("modal").classList.add("open")}
+function closeLegal(){document.getElementById("modal").classList.remove("open")}
+function backdrop(e){if(e.target.id==="modal")closeLegal()}
+
+
+
+function daycodePage(btn){
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("pageTitle").textContent="デイコード";
+  document.getElementById("chatPaletteOutputPage").style.display="none";
+  document.getElementById("palettePage").style.display="none";
+  document.getElementById("daycodePage").style.display="block";
+  document.getElementById("homeRecruit").style.display="none";
+  document.querySelector(".create").style.display="none";
+  document.querySelector(".calendar-card").style.display="none";
+  if(typeof dcRender==="function") dcRender();
+}
 
 function chatPalette(btn){
-
-  document
-    .querySelectorAll(".nav button")
-    .forEach(b=>b.classList.remove("active"));
-
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
-
-  document
-    .getElementById("pageTitle")
-    .textContent="チャットパレット生成";
-
-  document
-    .getElementById("chatPaletteOutputPage")
-    .style.display="block";
-
-  document
-    .getElementById("palettePage")
-    .style.display="block";
-
-  document
-    .getElementById("homeRecruit")
-    .style.display="none";
-
-  document
-    .querySelector(".create")
-    .style.display="none";
-
-  document
-    .querySelector(".calendar-card")
-    .style.display="none";
+  document.getElementById("pageTitle").textContent="チャットパレット生成";
+  document.getElementById("chatPaletteOutputPage").style.display="block";
+  document.getElementById("palettePage").style.display="block";
+  document.getElementById("daycodePage").style.display="none";
+  document.getElementById("homeRecruit").style.display="none";
+  document.querySelector(".create").style.display="none";
+  document.querySelector(".calendar-card").style.display="none";
 }
 
-
 function generatePalette(){
-
-  const success =
-    document.getElementById("successValue").value.trim();
-
-  const skill =
-    document.getElementById("skillName").value.trim();
-
-  const dice =
-    document.getElementById("diceValue").value.trim();
-
-  const feature =
-    document.getElementById("featureName").value.trim();
-
-  const result =
-    document.getElementById("paletteResult");
-
-  const copy =
-    document.getElementById("copyButton");
-
+  const success=document.getElementById("successValue").value.trim();
+  const skill=document.getElementById("skillName").value.trim();
+  const dice=document.getElementById("diceValue").value.trim();
+  const feature=document.getElementById("featureName").value.trim();
+  const result=document.getElementById("paletteResult");
+  const copy=document.getElementById("copyButton");
   const lines=[];
 
-
+  // ◯＋□ が揃っている場合
   if(success && skill){
-    lines.push(
-      `CCB<=${success} 【${skill}】`
-    );
+    lines.push(`CCB<=${success} 【${skill}】`);
   }
-
-
+  // △＋◎ が揃っている場合
   if(dice && feature){
-    lines.push(
-      `${dice} 【${feature}】`
-    );
+    lines.push(`${dice} 【${feature}】`);
   }
-
 
   if(lines.length===0){
-
-    result.innerHTML=
-      '<div class="result-empty">' +
-      '◯＋□、△＋◎のいずれかを入力してから出力してください。' +
-      '</div>';
-
+    result.innerHTML='<div class="result-empty">◯＋□、△＋◎のいずれかを入力してから出力してください。</div>';
     copy.style.display="none";
-
     return;
   }
 
-
-  result.innerHTML=
-    '<p class="result-text" id="resultText"></p>';
-
-  document
-    .getElementById("resultText")
-    .textContent=
-    lines.join("\n");
-
+  result.innerHTML='<p class="result-text" id="resultText"></p>';
+  document.getElementById("resultText").textContent=lines.join("\n");
   copy.style.display="block";
 }
 
-
 async function copyPalette(){
-
-  const text =
-    document
-      .getElementById("resultText")
-      ?.textContent || "";
-
+  const text=document.getElementById("resultText")?.textContent || "";
   if(!text)return;
-
-
   try{
-
     await navigator.clipboard.writeText(text);
-
-    const btn =
-      document.getElementById("copyButton");
-
-    const old =
-      btn.textContent;
-
+    const btn=document.getElementById("copyButton");
+    const old=btn.textContent;
     btn.textContent="コピーしました";
-
-    setTimeout(
-      ()=>btn.textContent=old,
-      1200
-    );
-
+    setTimeout(()=>btn.textContent=old,1200);
   }catch(e){
-
-    alert(
-      "コピーできませんでした。出力内容を選択してコピーしてください。"
-    );
-
+    alert("コピーできませんでした。出力内容を選択してコピーしてください。");
   }
 }
 
@@ -2107,417 +1074,170 @@ CCB<=5 【法律】
 CCB<=1 【薬学】
 CCB<=20 【歴史}`;
 
-
-let officialSkills =
-  new Map();
-
+let officialSkills = new Map();
 
 function officialIgnored(name){
-
-  if([
-    "正気度ロール",
-    "SAN値チェック",
-    "ダメージ判定"
-  ].includes(name)) return true;
-
+  if(["正気度ロール","SAN値チェック","ダメージ判定"].includes(name)) return true;
   return /^(STR|CON|POW|DEX|APP|SIZ|INT|EDU)\s*[×x＊*]\s*5$/i.test(name);
 }
-
-
 function officialEscape(s){
-
-  return String(s)
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;");
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
-
-
 function officialReadSkills(){
-
-  officialSkills =
-    new Map();
-
-  const lines =
-    document
-      .getElementById("officialInput")
-      .value
-      .replace(/\r\n?/g,"\n")
-      .split("\n");
-
-
+  officialSkills=new Map();
+  const lines=document.getElementById("officialInput").value.replace(/\r\n?/g,"\n").split("\n");
   for(const line0 of lines){
-
-    const line =
-      line0.trim();
-
-    const m =
-      line.match(
-        /^CCB\s*<=\s*(\d+)\s*【([^】]+)】\s*$/i
-      );
-
+    const line=line0.trim();
+    const m=line.match(/^CCB\s*<=\s*(\d+)\s*【([^】]+)】\s*$/i);
     if(!m) continue;
-
-    const name =
-      m[2].trim();
-
+    const name=m[2].trim();
     if(officialIgnored(name)) continue;
-
-    officialSkills.set(
-      name,
-      Number(m[1])
-    );
+    officialSkills.set(name,Number(m[1]));
   }
-
-
-  document
-    .getElementById("officialCount")
-    .textContent=
-    officialSkills.size+"件";
-
-
-  document
-    .getElementById("officialSkills")
-    .innerHTML=
-    officialSkills.size
-
-      ? "<table><tr><th>技能名</th><th>技能値</th></tr>" +
-        [...officialSkills]
-          .map(
-            ([n,v])=>
-              "<tr><td>" +
-              officialEscape(n) +
-              "</td><td>" +
-              v +
-              "</td></tr>"
-          )
-          .join("") +
-        "</table>"
-
-      : "認識できる技能がありません。";
-
-
-  document
-    .getElementById("officialResult")
-    .value="";
-
-
-  document
-    .getElementById("officialStatus")
-    .textContent=
-    officialSkills.size +
-    "件の技能を読み取りました。";
+  document.getElementById("officialCount").textContent=officialSkills.size+"件";
+  document.getElementById("officialSkills").innerHTML=officialSkills.size
+    ? "<table><tr><th>技能名</th><th>技能値</th></tr>"+[...officialSkills].map(([n,v])=>"<tr><td>"+officialEscape(n)+"</td><td>"+v+"</td></tr>").join("")+"</table>"
+    : "認識できる技能がありません。";
+  document.getElementById("officialResult").value="";
+  document.getElementById("officialStatus").textContent=officialSkills.size+"件の技能を読み取りました。";
 }
-
-
 function officialMake(){
-
-  const used =
-    new Set();
-
-
-  const lines =
-    OFFICIAL_TEMPLATE
-      .split("\n")
-      .map(line=>{
-
-        const m =
-          line.match(/【([^】]+)】/);
-
-        if(
-          !m ||
-          !officialSkills.has(m[1])
-        ){
-          return line;
-        }
-
-
-        const name =
-          m[1];
-
-        used.add(name);
-
-
-        if([
-          "アイデア",
-          "幸運",
-          "知識",
-          "母国語"
-        ].includes(name)){
-          return line;
-        }
-
-
-        return /^CCB\s*<=\s*\d+/i.test(line)
-
-          ? line.replace(
-              /^CCB\s*<=\s*\d+/i,
-              "CCB<="+
-              officialSkills.get(name)
-            )
-
-          : line;
-
-      });
-
-
-  for(
-    const [n,v]
-    of officialSkills
-  ){
-
-    if(!used.has(n)){
-
-      lines.push(
-        "CCB<="+
-        v+
-        " 【"+
-        n+
-        "】"
-      );
-    }
-  }
-
-
+  const used=new Set();
+  const lines=OFFICIAL_TEMPLATE.split("\n").map(line=>{
+    const m=line.match(/【([^】]+)】/);
+    if(!m || !officialSkills.has(m[1])) return line;
+    const name=m[1];
+    used.add(name);
+    if(["アイデア","幸運","知識","母国語"].includes(name)) return line;
+    return /^CCB\s*<=\s*\d+/i.test(line)
+      ? line.replace(/^CCB\s*<=\s*\d+/i,"CCB<="+officialSkills.get(name))
+      : line;
+  });
+  for(const [n,v] of officialSkills) if(!used.has(n)) lines.push("CCB<="+v+" 【"+n+"】");
   return lines.join("\n");
 }
-
-
 function officialGenerate(){
-
-  if(!officialSkills.size){
-    officialReadSkills();
-  }
-
-  if(officialSkills.size){
-
-    document
-      .getElementById("officialResult")
-      .value=
-      officialMake();
-
-  }
+  if(!officialSkills.size) officialReadSkills();
+  if(officialSkills.size) document.getElementById("officialResult").value=officialMake();
 }
-
-
 function officialClear(){
-
-  officialSkills =
-    new Map();
-
-  document
-    .getElementById("officialInput")
-    .value="";
-
-  document
-    .getElementById("officialResult")
-    .value="";
-
-  document
-    .getElementById("officialCount")
-    .textContent="";
-
-  document
-    .getElementById("officialSkills")
-    .textContent=
-    "まだ読み取っていません。";
-
-  document
-    .getElementById("officialStatus")
-    .textContent="";
-
-  document
-    .getElementById("officialCopyStatus")
-    .textContent="";
+  officialSkills=new Map();
+  document.getElementById("officialInput").value="";
+  document.getElementById("officialResult").value="";
+  document.getElementById("officialCount").textContent="";
+  document.getElementById("officialSkills").textContent="まだ読み取っていません。";
+  document.getElementById("officialStatus").textContent="";
+  document.getElementById("officialCopyStatus").textContent="";
 }
-
-
 async function officialCopy(){
-
-  const text =
-    document
-      .getElementById("officialResult")
-      .value;
-
-  if(!text){
-
-    document
-      .getElementById("officialCopyStatus")
-      .textContent=
-      "先に生成してください。";
-
-    return;
-  }
-
-
+  const text=document.getElementById("officialResult").value;
+  if(!text){document.getElementById("officialCopyStatus").textContent="先に生成してください。";return;}
   try{
-
     await navigator.clipboard.writeText(text);
-
-    document
-      .getElementById("officialCopyStatus")
-      .textContent=
-      "コピーしました。";
-
+    document.getElementById("officialCopyStatus").textContent="コピーしました。";
   }catch(e){
-
-    const r =
-      document.getElementById(
-        "officialResult"
-      );
-
-    r.focus();
-    r.select();
-
-    document
-      .getElementById("officialCopyStatus")
-      .textContent=
-      "自動コピーできない場合は、選択された文字をコピーしてください。";
+    const r=document.getElementById("officialResult"); r.focus(); r.select();
+    document.getElementById("officialCopyStatus").textContent="自動コピーできない場合は、選択された文字をコピーしてください。";
   }
 }
-
 
 function buildCalendar(){
-
-  const box =
-    document.getElementById(
-      "calendar"
-    );
-
-  const names=[
-    "日","月","火","水","木","金","土"
-  ];
-
-
-  names.forEach(n=>{
-
-    const x =
-      document.createElement("div");
-
-    x.className="weekday";
-    x.textContent=n;
-
-    box.appendChild(x);
-
-  });
-
-
-  const today =
-    new Date();
-
-  today.setHours(
-    0,0,0,0
-  );
-
-
-  const start =
-    new Date(today);
-
-  start.setDate(
-    today.getDate() -
-    today.getDay()
-  );
-
-
-  for(let i=0;i<28;i++){
-
-    const d =
-      new Date(start);
-
-    d.setDate(
-      start.getDate()+i
-    );
-
-
-    const x =
-      document.createElement("div");
-
-    x.className="day";
-
-
-    if(
-      d.getMonth()!=
-      today.getMonth()
-    ){
-      x.classList.add("muted");
-    }
-
-
-    if(
-      d.getTime()===
-      today.getTime()
-    ){
-      x.classList.add("today");
-    }
-
-
-    if(d.getDay()===0)
-      x.classList.add("sun");
-
-    if(d.getDay()===6)
-      x.classList.add("sat");
-
-
-    x.innerHTML=
-      '<span class="num">'+
-      d.getDate()+
-      '</span>';
-
-
-    box.appendChild(x);
-  }
+ const box=document.getElementById("calendar"),names=["日","月","火","水","木","金","土"];
+ names.forEach(n=>{const x=document.createElement("div");x.className="weekday";x.textContent=n;box.appendChild(x)});
+ const today=new Date();today.setHours(0,0,0,0);
+ const start=new Date(today);start.setDate(today.getDate()-today.getDay());
+ for(let i=0;i<28;i++){
+  const d=new Date(start);d.setDate(start.getDate()+i);
+  const x=document.createElement("div");x.className="day";
+  if(d.getMonth()!=today.getMonth())x.classList.add("muted");
+  if(d.getTime()==today.getTime())x.classList.add("today");
+  if(d.getDay()==0)x.classList.add("sun"); if(d.getDay()==6)x.classList.add("sat");
+  x.innerHTML='<span class="num">'+d.getDate()+'</span>';box.appendChild(x);
+ }
 }
+buildCalendar();
+document.addEventListener("DOMContentLoaded",()=>{
+  restoreDiscordSession();
+  handleDiscordCallback();
+  renderAllScenarioData();
+});
 
+/* ===== Embedded Daycode ===== */
+const KEY="takulog_internal_daycode_v1";
+const WD=["日","月","火","水","木","金","土"];
+let data=dcLoad(), editing=null, draft={};
 
-/* =========================================================
-   初期化
-   ========================================================= */
-
-async function initialize(){
-
-  updateAccountUI();
-
-  buildCalendar();
-
-
-  /*
-   * Discord Client ID未設定なら
-   * ログインボタンを押した時に案内する。
-   */
-  if(!DISCORD_CLIENT_ID){
-
-    updateDiscordDebug(
-      "Discord Application IDが未設定です。"
-    );
-
-  }else{
-
-    updateDiscordDebug(
-      "Discord Application IDは設定されています。"
-    );
-
-  }
-
-
-  /*
-   * Discordから戻ってきた場合の処理
-   */
-  await handleDiscordCallback();
-
-
-  /*
-   * ログイン状態を再表示
-   */
-  updateAccountUI();
-
+function dcFresh(){
+ const now=new Date(), y=now.getFullYear(), m=now.getMonth(), last=new Date(y,m+1,0).getDate();
+ const dates=[]; for(let d=1;d<=last;d++)dates.push(dcFmt(new Date(y,m,d)));
+ return {scenarioId:"prototype-scenario",members:["参加者A","参加者B","参加者C"],dates,answers:{}};
 }
+function dcLoad(){try{return JSON.parse(localStorage.getItem(KEY))||dcFresh()}catch(e){return dcFresh()}}
+function dcSave(){localStorage.setItem(KEY,JSON.stringify(data));dcStatus("保存しました")}
+function dcStatus(t){const e=document.getElementById("dcStatus");e.textContent=t;setTimeout(()=>e.textContent="",1300)}
+function dcFmt(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function dcDateText(s){const d=new Date(s+"T00:00:00");return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${WD[d.getDay()]}）`}
+function dcEnsure(u,d){data.answers[u]??={};data.answers[u][d]??="";return data.answers[u][d]}
+function dcEsc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
-
-initialize();
-
+function dcRender(){
+ const sel=document.getElementById("user");sel.innerHTML="";
+ data.members.forEach(m=>{const o=document.createElement("option");o.value=m;o.textContent=m;sel.appendChild(o)});
+ let h="<thead><tr><th class='date'>日程</th>";
+ data.members.forEach(m=>h+=`<th><span class="member" onclick='dcChoose(${JSON.stringify(m)})'>${dcEsc(m)}</span></th>`);
+ h+="</tr></thead><tbody>";
+ data.dates.forEach(d=>{
+  h+=`<tr><td class="date">${dcDateText(d)}</td>`;
+  data.members.forEach(m=>{const a=dcEnsure(m,d);const c=a==="○"?"ok":a==="△"?"maybe":a==="×"?"no":"none";h+=`<td class="answer ${c}">${a||"－"}</td>`});
+  h+="</tr>";
+ });
+ document.getElementById("table").innerHTML=h+"</tbody>";
+}
+function dcChoose(m){document.getElementById("user").value=m;dcOpenEditor()}
+function dcOpenEditor(){
+ editing=document.getElementById("user").value;if(!editing)return;
+ draft=JSON.parse(JSON.stringify(data.answers[editing]||{}));
+ document.getElementById("editorTitle").textContent=editing+" さんの日程登録";
+ dcRenderBulk();dcRenderDays();document.getElementById("editor").classList.add("active");
+ document.getElementById("editor").scrollIntoView({behavior:"smooth"});
+}
+function dcRenderBulk(){
+ const b=document.getElementById("bulk");b.innerHTML="";
+ WD.forEach((w,i)=>{b.innerHTML+=`<div class="bulkbox">${w}曜日<select onchange="dcBulkSet(${i},this.value)"><option value="">変更しない</option><option>○</option><option>△</option><option>×</option></select></div>`})
+}
+function dcBulkSet(i,v){
+ if(!v)return;
+ data.dates.forEach(d=>{if(new Date(d+"T00:00:00").getDay()===i)draft[d]=v});
+ dcRenderDays();
+}
+function dcRenderDays(){
+ const box=document.getElementById("days");box.innerHTML="";
+ data.dates.forEach(d=>{
+  const a=draft[d]||"";
+  box.innerHTML+=`<div class="day"><div>${dcDateText(d)}</div><div class="choices">${["○","△","×"].map(v=>`<button class="choice ${a===v?"selected":""}" onclick='dcSetAnswer(${JSON.stringify(d)},${JSON.stringify(v)})'>${v}</button>`).join("")}</div></div>`
+ })
+}
+function dcSetAnswer(d,v){draft[d]=v;dcRenderDays()}
+function dcSaveEditor(){data.answers[editing]={...draft};dcSave();dcRender();dcCloseEditor()}
+function dcCloseEditor(){document.getElementById("editor").classList.remove("active");editing=null;draft={}}
+function dcAddMember(){
+ const n=prompt("参加者名を入力してください");if(!n||data.members.includes(n))return;
+ data.members.push(n);data.answers[n]={};dcSave();dcRender()
+}
+function dcAddNextMonth(){
+ const last=data.dates.length?new Date(data.dates[data.dates.length-1]+"T00:00:00"):new Date();
+ const y=last.getFullYear(),m=last.getMonth()+1,end=new Date(y,m+1,0).getDate();
+ for(let d=1;d<=end;d++){const s=dcFmt(new Date(y,m,d));if(!data.dates.includes(s))data.dates.push(s)}
+ data.dates.sort();dcSave();dcRender()
+}
+function dcAutoAddOn25(){
+ const t=new Date();if(t.getDate()!==25)return;
+ const y=t.getFullYear(),m=t.getMonth()+1,end=new Date(y,m+1,0).getDate();let changed=false;
+ for(let d=1;d<=end;d++){const s=dcFmt(new Date(y,m,d));if(!data.dates.includes(s)){data.dates.push(s);changed=true}}
+ if(changed){data.dates.sort();dcSave()}
+}
+function dcResetData(){if(confirm("試作データを初期化しますか？")){data=dcFresh();dcSave();dcRender();dcCloseEditor()}}
+dcAutoAddOn25();dcRender();
 </script>
-
 </body>
 </html>
-```
