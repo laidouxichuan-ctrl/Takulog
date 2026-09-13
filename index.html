@@ -1,11 +1,11 @@
 
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>卓ログ</title>
-
 <style>
 *{box-sizing:border-box}
 :root{
@@ -718,411 +718,234 @@ body{
 .daycode-choices{display:flex;gap:6px;justify-content:flex-end}.daycode-choice{min-width:50px;background:#fff;border:1px solid #dbe2eb;border-radius:7px;padding:7px 11px;cursor:pointer}.daycode-choice:nth-child(1){color:#1762c7}.daycode-choice:nth-child(2){color:#d79b00}.daycode-choice:nth-child(3){color:#d33a3a}.daycode-choice.selected{font-weight:800;box-shadow:0 0 0 2px currentColor inset}
 .daycode-analysis{margin-top:18px;padding:15px;border:1px solid var(--line);border-radius:10px;background:#f8fafc}
 @media(max-width:700px){.daycode-bulk{grid-template-columns:repeat(2,1fr)}.daycode-day{grid-template-columns:1fr}.daycode-choices{justify-content:flex-start}}
+
+/* 指定された左上アイコン */
+.takulog-top-left-icon {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  display: block;
+}
 </style>
 </head>
-
 <body>
-
 <div class="app">
-
 <aside class="sidebar" id="sidebar">
-
-  <div class="brand">
-    <div class="die">100</div>
-    <div class="brand-name">卓ログ</div>
-  </div>
-
-  <button class="toggle"
-          onclick="toggleSidebar()"
-          aria-label="目次を拡大・縮小">‹</button>
-
-  <nav class="nav">
-
-    <button class="active"
-            data-page="ホーム"
-            onclick="home(this)">
-      <span class="icon">⌂</span>
-      <span class="label">ホーム</span>
-    </button>
-
-    <button data-page="シナリオ予定作成"
-            onclick="placeholder(this)">
-      <span class="icon">＋</span>
-      <span class="label">シナリオ予定作成</span>
-    </button>
-
-    <button data-page="予定作成済みシナリオ"
-            onclick="placeholder(this)">
-      <span class="icon">▣</span>
-      <span class="label">予定作成済みシナリオ</span>
-    </button>
-
-    <button data-page="参加希望済みシナリオ"
-            onclick="placeholder(this)">
-      <span class="icon">☆</span>
-      <span class="label">参加希望済みシナリオ</span>
-    </button>
-
-    <button data-page="プレイ済みシナリオ"
-            onclick="placeholder(this)">
-      <span class="icon">✓</span>
-      <span class="label">プレイ済みシナリオ</span>
-    </button>
-
-    <button data-page="チャットパレット生成"
-            onclick="chatPalette(this)">
-      <span class="icon">▤</span>
-      <span class="label">チャットパレット生成</span>
-    </button>
-
-    <button data-page="デイコード"
-            onclick="daycodePage(this)">
-      <span class="icon">▦</span>
-      <span class="label">デイコード</span>
-    </button>
-
-  </nav>
-
-  <!-- Discordアカウント表示 -->
-  <div class="account-area" id="accountArea">
-
-    <button class="account-login"
-            id="loginButton"
-            onclick="loginWithDiscord()">
+<div class="brand">
+<div class="die">100</div>
+<div class="brand-name">卓ログ</div>
+</div>
+<button aria-label="目次を拡大・縮小" class="toggle" onclick="toggleSidebar()">‹</button>
+<nav class="nav">
+<button class="active" data-page="ホーム" onclick="home(this)">
+<span class="icon">⌂</span>
+<span class="label">ホーム</span>
+</button>
+<button data-page="シナリオ予定作成" onclick="placeholder(this)">
+<span class="icon">＋</span>
+<span class="label">シナリオ予定作成</span>
+</button>
+<button data-page="予定作成済みシナリオ" onclick="placeholder(this)">
+<span class="icon">▣</span>
+<span class="label">予定作成済みシナリオ</span>
+</button>
+<button data-page="参加希望済みシナリオ" onclick="placeholder(this)">
+<span class="icon">☆</span>
+<span class="label">参加希望済みシナリオ</span>
+</button>
+<button data-page="プレイ済みシナリオ" onclick="placeholder(this)">
+<span class="icon">✓</span>
+<span class="label">プレイ済みシナリオ</span>
+</button>
+<button data-page="チャットパレット生成" onclick="chatPalette(this)">
+<span class="icon">▤</span>
+<span class="label">チャットパレット生成</span>
+</button>
+<button data-page="デイコード" onclick="daycodePage(this)">
+<span class="icon">▦</span>
+<span class="label">デイコード</span>
+</button>
+</nav>
+<!-- Discordアカウント表示 -->
+<div class="account-area" id="accountArea">
+<button class="account-login" id="loginButton" onclick="loginWithDiscord()">
       Discordでログイン
     </button>
-
-    <div class="account-user"
-         id="accountUser"
-         style="display:none">
-
-      <img class="account-avatar"
-           id="accountAvatar"
-           alt="Discordアイコン">
-
-      <div class="account-info">
-        <div class="account-name"
-             id="accountName"></div>
-        <div class="account-status">
+<div class="account-user" id="accountUser" style="display:none">
+<img alt="Discordアイコン" class="account-avatar" id="accountAvatar" src="index.html"/>
+<div class="account-info">
+<div class="account-name" id="accountName"></div>
+<div class="account-status">
           Discordでログイン中
         </div>
-      </div>
-
-    </div>
-
-    <button class="logout-button"
-            id="logoutButton"
-            onclick="logoutDiscord()"
-            style="display:none">
+</div>
+</div>
+<button class="logout-button" id="logoutButton" onclick="logoutDiscord()" style="display:none">
       ログアウト
     </button>
-
-  </div>
-
+</div>
 </aside>
-
-
 <main class="main">
-
 <header class="topbar">
-  <div class="page-title"
-       id="pageTitle">ホーム</div>
+<div class="page-title" id="pageTitle">ホーム</div>
 </header>
-
 <div class="content">
-
 <!-- Discordログイン動作確認 -->
-<section class="card discord-debug"
-         id="discordDebug">
-
-  <div class="discord-debug-title">
+<section class="card discord-debug" id="discordDebug">
+<div class="discord-debug-title">
     Discordログイン確認
   </div>
-
-  <div class="discord-debug-text">
+<div class="discord-debug-text">
     現在のDiscordログイン状態を確認できます。
   </div>
-
-  <div class="discord-debug-status"
-       id="discordDebugStatus">
+<div class="discord-debug-status" id="discordDebugStatus">
     未確認
   </div>
-
 </section>
-
-
 <section class="card create">
-  <button class="primary"
-          onclick="placeholder(document.querySelector('[data-page=&quot;シナリオ予定作成&quot;]'))">
+<button class="primary" onclick="placeholder(document.querySelector('[data-page=&quot;シナリオ予定作成&quot;]'))">
     ＋　シナリオ予定を作成
   </button>
 </section>
-
-
 <section class="card calendar-card">
-
-  <div class="calendar-head">
-    <h2 class="section-title">カレンダー</h2>
-  </div>
-
-  <div class="calendar"
-       id="calendar"></div>
-
+<div class="calendar-head">
+<h2 class="section-title">カレンダー</h2>
+</div>
+<div class="calendar" id="calendar"></div>
 </section>
-
-
-<section class="card recruit"
-         id="homeRecruit">
-
-  <h2 class="section-title">
+<section class="card recruit" id="homeRecruit">
+<h2 class="section-title">
     参加者募集中シナリオ
   </h2>
-
-  <div class="empty">
+<div class="empty">
     現在、参加者を募集中のシナリオはありません。
   </div>
-
 </section>
-
-
-<section class="card palette-page"
-         id="chatPaletteOutputPage"
-         style="display:none">
-
-  <div class="palette-intro">
-
-    <h2 class="section-title">
+<section class="card palette-page" id="chatPaletteOutputPage" style="display:none">
+<div class="palette-intro">
+<h2 class="section-title">
       チャットパレット出力
     </h2>
-
-    <p>
+<p>
       いあきゃらからコピーしたチャットパレットを読み取り、
       卓ログで使用するチャットパレットを生成します。
     </p>
-
-  </div>
-
-  <div class="field-card">
-
-    <label for="officialInput">
+</div>
+<div class="field-card">
+<label for="officialInput">
       ① いあきゃらのチャットパレット
     </label>
-
-    <textarea
-      id="officialInput"
-      style="width:100%;min-height:220px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical"
-      placeholder="いあきゃらからコピーして貼り付け"></textarea>
-
-    <button class="primary palette-button"
-            id="officialRead"
-            onclick="officialReadSkills()">
+<textarea id="officialInput" placeholder="いあきゃらからコピーして貼り付け" style="width:100%;min-height:220px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical"></textarea>
+<button class="primary palette-button" id="officialRead" onclick="officialReadSkills()">
       読み取り
     </button>
-
-    <button class="copy-button"
-            style="display:inline-block;margin:8px 0 0 0"
-            onclick="officialClear()">
+<button class="copy-button" onclick="officialClear()" style="display:inline-block;margin:8px 0 0 0">
       クリア
     </button>
-
-    <p id="officialStatus"></p>
-
-  </div>
-
-
-  <div class="field-card"
-       style="margin-top:14px">
-
-    <label>② 読み取り結果</label>
-
-    <p id="officialCount"></p>
-
-    <div id="officialSkills">
+<p id="officialStatus"></p>
+</div>
+<div class="field-card" style="margin-top:14px">
+<label>② 読み取り結果</label>
+<p id="officialCount"></p>
+<div id="officialSkills">
       まだ読み取っていません。
     </div>
-
-  </div>
-
-
-  <div class="field-card"
-       style="margin-top:14px">
-
-    <label>③ 生成結果</label>
-
-    <button class="primary palette-button"
-            onclick="officialGenerate()">
+</div>
+<div class="field-card" style="margin-top:14px">
+<label>③ 生成結果</label>
+<button class="primary palette-button" onclick="officialGenerate()">
       チャットパレットを生成
     </button>
-
-    <textarea
-      id="officialResult"
-      readonly
-      style="width:100%;min-height:350px;margin-top:12px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical"></textarea>
-
-    <button class="copy-button"
-            onclick="officialCopy()">
+<textarea id="officialResult" readonly="" style="width:100%;min-height:350px;margin-top:12px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical"></textarea>
+<button class="copy-button" onclick="officialCopy()">
       コピー
     </button>
-
-    <p id="officialCopyStatus"></p>
-
-  </div>
-
+<p id="officialCopyStatus"></p>
+</div>
 </section>
-
-
-<section class="card palette-page"
-         id="palettePage"
-         style="display:none">
-
-  <div class="palette-intro">
-
-    <h2 class="section-title">
+<section class="card palette-page" id="palettePage" style="display:none">
+<div class="palette-intro">
+<h2 class="section-title">
       オリジナル技能作成
     </h2>
-
-    <p>
+<p>
       いあきゃらで出力しきれない技能などを、
       チャットパレット用の形式で作成できます。
     </p>
-
-  </div>
-
-
-  <div class="palette-grid">
-
-    <div class="field-card">
-
-      <label for="successValue">
+</div>
+<div class="palette-grid">
+<div class="field-card">
+<label for="successValue">
         成功値 <span>◯</span>
-      </label>
-
-      <input
-        id="successValue"
-        type="text"
-        placeholder="5"
-        autocomplete="off">
-
-    </div>
-
-
-    <div class="field-card">
-
-      <label for="skillName">
+</label>
+<input autocomplete="off" id="successValue" placeholder="5" type="text"/>
+</div>
+<div class="field-card">
+<label for="skillName">
         技能の名前 <span>□</span>
-      </label>
-
-      <input
-        id="skillName"
-        type="text"
-        placeholder="医学"
-        autocomplete="off">
-
-    </div>
-
-
-    <div class="field-card">
-
-      <label for="diceValue">
+</label>
+<input autocomplete="off" id="skillName" placeholder="医学" type="text"/>
+</div>
+<div class="field-card">
+<label for="diceValue">
         使用するダイス <span>△</span>
-      </label>
-
-      <input
-        id="diceValue"
-        type="text"
-        placeholder="2D3"
-        autocomplete="off">
-
-    </div>
-
-
-    <div class="field-card">
-
-      <label for="featureName">
+</label>
+<input autocomplete="off" id="diceValue" placeholder="2D3" type="text"/>
+</div>
+<div class="field-card">
+<label for="featureName">
         技能の名前と特徴 <span>◎</span>
-      </label>
-
-      <input
-        id="featureName"
-        type="text"
-        placeholder="医学回復"
-        autocomplete="off">
-
-    </div>
-
-  </div>
-
-
-  <div class="output-choice">
-
-    <div>
-
-      <div class="output-title">
+</label>
+<input autocomplete="off" id="featureName" placeholder="医学回復" type="text"/>
+</div>
+</div>
+<div class="output-choice">
+<div>
+<div class="output-title">
         出力内容
       </div>
-
-      <div class="output-help">
+<div class="output-help">
         入力済みの項目だけを組み合わせて出力します。
       </div>
-
-    </div>
-
-    <button class="primary palette-button"
-            onclick="generatePalette()">
+</div>
+<button class="primary palette-button" onclick="generatePalette()">
       出力
     </button>
-
-  </div>
-
-
-  <div class="result-card"
-       id="paletteResult"
-       aria-live="polite">
-
-    <div class="result-empty">
+</div>
+<div aria-live="polite" class="result-card" id="paletteResult">
+<div class="result-empty">
       ここにチャットパレットが表示されます。
     </div>
-
-  </div>
-
-  <button class="copy-button"
-          id="copyButton"
-          onclick="copyPalette()"
-          style="display:none">
+</div>
+<button class="copy-button" id="copyButton" onclick="copyPalette()" style="display:none">
     コピー
   </button>
-
 </section>
-
-
-
 <section class="card daycode-page" id="daycodePage" style="display:none">
-  <div class="calendar-head">
-    <h2 class="section-title">デイコード</h2>
-  </div>
-  <div class="daycode-toolbar">
-    <div class="daycode-user-box" id="daycodeUserBox"></div>
-    <button class="primary" style="width:auto;min-height:42px;padding:0 18px" onclick="daycodeOpenEditor()">自分の日程を入力</button>
-    <button style="min-height:42px" onclick="daycodeAddNextMonth()">翌月分を追加</button>
-    <span id="daycodeStatus" class="empty"></span>
-  </div>
-  <div class="daycode-table-wrap" style="margin-top:14px"><table class="daycode-table" id="daycodeTable"></table></div>
-  <section id="daycodeEditor" class="card daycode-editor" style="padding:16px">
-    <h2 id="daycodeEditorTitle" class="section-title"></h2>
-    <div style="display:flex;gap:8px;margin-bottom:14px"><button class="primary" style="width:auto;min-height:42px;padding:0 18px" onclick="daycodeSaveEditor()">日程登録</button><button onclick="daycodeCloseEditor()">キャンセル</button></div>
-    <div class="card" style="background:#fafafa;padding:14px">
-      <b>曜日一括入力</b>
-      <div class="empty" style="margin-top:4px">選択した曜日のすべての日付へ一括反映します。反映後、個別に変更できます。</div>
-      <div id="daycodeBulk" class="daycode-bulk"></div>
-    </div>
-    <div id="daycodeDays"></div>
-    <div style="display:flex;gap:8px;margin-top:14px"><button class="primary" style="width:auto;min-height:42px;padding:0 18px" onclick="daycodeSaveEditor()">日程登録</button><button onclick="daycodeCloseEditor()">キャンセル</button></div>
-  </section>
+<div class="calendar-head">
+<h2 class="section-title">デイコード</h2>
+</div>
+<div class="daycode-toolbar">
+<div class="daycode-user-box" id="daycodeUserBox"></div>
+<button class="primary" onclick="daycodeOpenEditor()" style="width:auto;min-height:42px;padding:0 18px">自分の日程を入力</button>
+<button onclick="daycodeAddNextMonth()" style="min-height:42px">翌月分を追加</button>
+<span class="empty" id="daycodeStatus"></span>
+</div>
+<div class="daycode-table-wrap" style="margin-top:14px"><table class="daycode-table" id="daycodeTable"></table></div>
+<section class="card daycode-editor" id="daycodeEditor" style="padding:16px">
+<h2 class="section-title" id="daycodeEditorTitle"></h2>
+<div style="display:flex;gap:8px;margin-bottom:14px"><button class="primary" onclick="daycodeSaveEditor()" style="width:auto;min-height:42px;padding:0 18px">日程登録</button><button onclick="daycodeCloseEditor()">キャンセル</button></div>
+<div class="card" style="background:#fafafa;padding:14px">
+<b>曜日一括入力</b>
+<div class="empty" style="margin-top:4px">選択した曜日のすべての日付へ一括反映します。反映後、個別に変更できます。</div>
+<div class="daycode-bulk" id="daycodeBulk"></div>
+</div>
+<div id="daycodeDays"></div>
+<div style="display:flex;gap:8px;margin-top:14px"><button class="primary" onclick="daycodeSaveEditor()" style="width:auto;min-height:42px;padding:0 18px">日程登録</button><button onclick="daycodeCloseEditor()">キャンセル</button></div>
 </section>
-
+</section>
 <footer class="footer">
-
-  <button onclick="openLegal('terms')">
+<button onclick="openLegal('terms')">
     利用規約
   </button>
 
@@ -1131,47 +954,26 @@ body{
   <button onclick="openLegal('privacy')">
     プライバシーポリシー
   </button>
-
 </footer>
-
 </div>
 </main>
 </div>
-
-
-<div class="modal-backdrop"
-     id="modal"
-     onclick="backdrop(event)">
-
-  <div class="modal">
-
-    <div class="modal-head">
-
-      <h2 id="modalTitle"></h2>
-
-      <button class="close"
-              onclick="closeLegal()">
+<div class="modal-backdrop" id="modal" onclick="backdrop(event)">
+<div class="modal">
+<div class="modal-head">
+<h2 id="modalTitle"></h2>
+<button class="close" onclick="closeLegal()">
         ×
       </button>
-
-    </div>
-
-    <div class="modal-body"
-         id="modalBody"></div>
-
-    <div class="modal-foot">
-
-      <button onclick="closeLegal()">
+</div>
+<div class="modal-body" id="modalBody"></div>
+<div class="modal-foot">
+<button onclick="closeLegal()">
         閉じる
       </button>
-
-    </div>
-
-  </div>
-
 </div>
-
-
+</div>
+</div>
 <script>
 
 /* =========================================================
@@ -2637,7 +2439,6 @@ async function initialize(){
 initialize();
 
 </script>
-
 </body>
 </html>
 ```
