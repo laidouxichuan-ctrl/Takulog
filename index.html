@@ -1,4 +1,4 @@
-```html
+
 <!doctype html>
 <html lang="ja">
 <head>
@@ -696,6 +696,28 @@ body{
     width:100%
   }
 }
+
+/* デイコード */
+.daycode-page{padding:18px;margin-bottom:22px}
+.daycode-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.daycode-user-box{display:flex;align-items:center;gap:9px;min-height:42px;padding:7px 12px;border:1px solid var(--line);border-radius:9px;background:#f8fafc;flex:1;min-width:220px}
+.daycode-user-avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#e9eef5}
+.daycode-user-name{font-weight:700;font-size:13px}
+.daycode-login-required{color:var(--muted);font-size:13px}
+.daycode-table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:10px}
+.daycode-table{border-collapse:collapse;min-width:720px;width:100%}
+.daycode-table th,.daycode-table td{border:1px solid var(--line);padding:8px;text-align:center;white-space:nowrap}
+.daycode-table th{background:#f8fafc;color:#697484;position:sticky;top:74px;z-index:2}
+.daycode-date{position:sticky;left:0;background:#fff;text-align:left;z-index:1}
+.daycode-table th.daycode-date{background:#f8fafc;z-index:3}
+.daycode-answer{font-weight:700}.daycode-none{color:#999}.daycode-ok{color:#1762c7}.daycode-maybe{color:#d79b00}.daycode-no{color:#d33a3a}
+.daycode-editor{display:none;margin-top:18px}.daycode-editor.active{display:block}
+.daycode-bulk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:12px 0}
+.daycode-bulkbox{border:1px solid var(--line);border-radius:8px;padding:7px;text-align:center;background:#fafcff}.daycode-bulkbox select{width:100%;margin-top:5px}
+.daycode-day{display:grid;grid-template-columns:1fr 180px;gap:10px;padding:7px 0;border-bottom:1px solid #eee;align-items:center}
+.daycode-choices{display:flex;gap:6px;justify-content:flex-end}.daycode-choice{min-width:50px;background:#fff;border:1px solid #dbe2eb;border-radius:7px;padding:7px 11px;cursor:pointer}.daycode-choice:nth-child(1){color:#1762c7}.daycode-choice:nth-child(2){color:#d79b00}.daycode-choice:nth-child(3){color:#d33a3a}.daycode-choice.selected{font-weight:800;box-shadow:0 0 0 2px currentColor inset}
+.daycode-analysis{margin-top:18px;padding:15px;border:1px solid var(--line);border-radius:10px;background:#f8fafc}
+@media(max-width:700px){.daycode-bulk{grid-template-columns:repeat(2,1fr)}.daycode-day{grid-template-columns:1fr}.daycode-choices{justify-content:flex-start}}
 </style>
 </head>
 
@@ -754,7 +776,7 @@ body{
     </button>
 
     <button data-page="デイコード"
-            onclick="placeholder(this)">
+            onclick="daycodePage(this)">
       <span class="icon">▦</span>
       <span class="label">デイコード</span>
     </button>
@@ -1072,6 +1094,31 @@ body{
 
 </section>
 
+
+
+<section class="card daycode-page" id="daycodePage" style="display:none">
+  <div class="calendar-head">
+    <h2 class="section-title">デイコード</h2>
+  </div>
+  <div class="daycode-toolbar">
+    <div class="daycode-user-box" id="daycodeUserBox"></div>
+    <button class="primary" style="width:auto;min-height:42px;padding:0 18px" onclick="daycodeOpenEditor()">自分の日程を入力</button>
+    <button style="min-height:42px" onclick="daycodeAddNextMonth()">翌月分を追加</button>
+    <span id="daycodeStatus" class="empty"></span>
+  </div>
+  <div class="daycode-table-wrap" style="margin-top:14px"><table class="daycode-table" id="daycodeTable"></table></div>
+  <section id="daycodeEditor" class="card daycode-editor" style="padding:16px">
+    <h2 id="daycodeEditorTitle" class="section-title"></h2>
+    <div style="display:flex;gap:8px;margin-bottom:14px"><button class="primary" style="width:auto;min-height:42px;padding:0 18px" onclick="daycodeSaveEditor()">日程登録</button><button onclick="daycodeCloseEditor()">キャンセル</button></div>
+    <div class="card" style="background:#fafafa;padding:14px">
+      <b>曜日一括入力</b>
+      <div class="empty" style="margin-top:4px">選択した曜日のすべての日付へ一括反映します。反映後、個別に変更できます。</div>
+      <div id="daycodeBulk" class="daycode-bulk"></div>
+    </div>
+    <div id="daycodeDays"></div>
+    <div style="display:flex;gap:8px;margin-top:14px"><button class="primary" style="width:auto;min-height:42px;padding:0 18px" onclick="daycodeSaveEditor()">日程登録</button><button onclick="daycodeCloseEditor()">キャンセル</button></div>
+  </section>
+</section>
 
 <footer class="footer">
 
@@ -2377,6 +2424,79 @@ async function officialCopy(){
   }
 }
 
+
+
+/* =========================================================
+   デイコード
+   ========================================================= */
+const DAYCODE_KEY="takulog_internal_daycode_v2";
+const DAYCODE_WD=["日","月","火","水","木","金","土"];
+let daycodeData=daycodeLoad(), daycodeEditing=null, daycodeDraft={};
+function daycodeFresh(){
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth(), last=new Date(y,m+1,0).getDate();
+  const dates=[]; for(let d=1;d<=last;d++) dates.push(daycodeFmt(new Date(y,m,d)));
+  return {scenarioId:"prototype-scenario",members:[],dates,answers:{}};
+}
+function daycodeLoad(){try{return JSON.parse(localStorage.getItem(DAYCODE_KEY))||daycodeFresh()}catch(e){return daycodeFresh()}}
+function daycodeSave(){localStorage.setItem(DAYCODE_KEY,JSON.stringify(daycodeData));daycodeStatus("保存しました")}
+function daycodeStatus(t){const e=document.getElementById("daycodeStatus");if(e){e.textContent=t;setTimeout(()=>e.textContent="",1300)}}
+function daycodeFmt(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function daycodeDateText(s){const d=new Date(s+"T00:00:00");return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${DAYCODE_WD[d.getDay()]}）`}
+function daycodeCurrentUser(){
+  try{const raw=sessionStorage.getItem(DISCORD_USER_KEY);return raw?JSON.parse(raw):null}catch(e){return null}
+}
+function daycodeUserId(){const u=daycodeCurrentUser();return u&&u.id?u.id:null}
+function daycodeUserName(){const u=daycodeCurrentUser();return u?getDiscordDisplayName(u):null}
+function daycodeEnsureCurrentUser(){
+  const u=daycodeCurrentUser(); if(!u)return null;
+  const key="discord:"+u.id;
+  if(!daycodeData.members.includes(key)) daycodeData.members.push(key);
+  daycodeData.answers[key]??={};
+  return key;
+}
+function daycodeDisplayMember(key){
+  if(key.startsWith("discord:")){
+    const u=daycodeCurrentUser(); if(u&&("discord:"+u.id)===key)return getDiscordDisplayName(u);
+  }
+  return key;
+}
+function daycodeEnsure(u,d){daycodeData.answers[u]??={};daycodeData.answers[u][d]??="";return daycodeData.answers[u][d]}
+function daycodeRenderUser(){
+  const box=document.getElementById("daycodeUserBox"); const u=daycodeCurrentUser();
+  if(!u){box.innerHTML='<span class="daycode-login-required">日程を登録するにはDiscordにログインしてください。</span>';return}
+  const avatar=getDiscordAvatarUrl(u);
+  box.innerHTML=`<img class="daycode-user-avatar" src="${avatar}" alt="Discordアイコン"><span class="daycode-user-name">入力者：${escapeHtml(getDiscordDisplayName(u))}</span>`;
+}
+function daycodeRender(){
+  daycodeRenderUser();
+  const selUser=daycodeEnsureCurrentUser();
+  if(selUser) localStorage.setItem(DAYCODE_KEY,JSON.stringify(daycodeData));
+  const table=document.getElementById("daycodeTable"); let h="<thead><tr><th class='daycode-date'>日程</th>";
+  daycodeData.members.forEach(m=>h+=`<th>${escapeHtml(daycodeDisplayMember(m))}</th>`); h+="</tr></thead><tbody>";
+  daycodeData.dates.forEach(d=>{h+=`<tr><td class="daycode-date">${daycodeDateText(d)}</td>`;daycodeData.members.forEach(m=>{const a=daycodeEnsure(m,d);const c=a==="○"?"daycode-ok":a==="△"?"daycode-maybe":a==="×"?"daycode-no":"daycode-none";h+=`<td class="daycode-answer ${c}">${a||"－"}</td>`});h+="</tr>"});
+  table.innerHTML=h+"</tbody>";
+}
+function daycodePage(btn){
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));btn.classList.add("active");
+  document.getElementById("pageTitle").textContent="デイコード";
+  ["chatPaletteOutputPage","palettePage","homeRecruit"].forEach(id=>document.getElementById(id).style.display="none");
+  document.querySelector(".create").style.display="none";document.querySelector(".calendar-card").style.display="none";
+  document.getElementById("daycodePage").style.display="block";daycodeRender();
+}
+function daycodeOpenEditor(){
+  const key=daycodeEnsureCurrentUser();
+  if(!key){alert("先にDiscordへログインしてください。");return}
+  daycodeEditing=key;daycodeDraft=JSON.parse(JSON.stringify(daycodeData.answers[key]||{}));
+  document.getElementById("daycodeEditorTitle").textContent=daycodeUserName()+" さんの日程登録";
+  daycodeRenderBulk();daycodeRenderDays();document.getElementById("daycodeEditor").classList.add("active");document.getElementById("daycodeEditor").scrollIntoView({behavior:"smooth"});
+}
+function daycodeRenderBulk(){const b=document.getElementById("daycodeBulk");b.innerHTML="";DAYCODE_WD.forEach((w,i)=>{b.innerHTML+=`<div class="daycode-bulkbox">${w}曜日<select onchange="daycodeBulkSet(${i},this.value)"><option value="">変更しない</option><option>○</option><option>△</option><option>×</option></select></div>`})}
+function daycodeBulkSet(i,v){if(!v)return;daycodeData.dates.forEach(d=>{if(new Date(d+"T00:00:00").getDay()===i)daycodeDraft[d]=v});daycodeRenderDays()}
+function daycodeRenderDays(){const box=document.getElementById("daycodeDays");box.innerHTML="";daycodeData.dates.forEach(d=>{const a=daycodeDraft[d]||"";box.innerHTML+=`<div class="daycode-day"><div>${daycodeDateText(d)}</div><div class="daycode-choices">${["○","△","×"].map(v=>`<button class="daycode-choice ${a===v?"selected":""}" onclick='daycodeSetAnswer(${JSON.stringify(d)},${JSON.stringify(v)})'>${v}</button>`).join("")}</div></div>`})}
+function daycodeSetAnswer(d,v){daycodeDraft[d]=v;daycodeRenderDays()}
+function daycodeSaveEditor(){if(!daycodeEditing)return;daycodeData.answers[daycodeEditing]={...daycodeDraft};daycodeSave();daycodeRender();daycodeCloseEditor()}
+function daycodeCloseEditor(){document.getElementById("daycodeEditor").classList.remove("active");daycodeEditing=null;daycodeDraft={}}
+function daycodeAddNextMonth(){const last=daycodeData.dates.length?new Date(daycodeData.dates[daycodeData.dates.length-1]+"T00:00:00"):new Date();const y=last.getFullYear(),m=last.getMonth()+1,end=new Date(y,m+1,0).getDate();for(let d=1;d<=end;d++){const s=daycodeFmt(new Date(y,m,d));if(!daycodeData.dates.includes(s))daycodeData.dates.push(s)}daycodeData.dates.sort();daycodeSave();daycodeRender()}
 
 function buildCalendar(){
 
