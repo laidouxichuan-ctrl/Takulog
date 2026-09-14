@@ -432,125 +432,114 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* Discord OAuth2 設定
-   Discord Developer Portalで「Public Client」を有効にしている前提です。
-   CLIENT_IDにはDiscordアプリケーションのApplication IDを設定してください。
+/* ===== Supabase Auth / Discord =====
+   Discord OAuthはSupabase Auth経由で行います。
+   ブラウザに置くのはPublishable keyのみです。
 */
-// 卓ログ Discord Client ID 設定
-const DISCORD_CLIENT_ID = "1543762389000790016";
+const SUPABASE_URL = "https://cbncxsxfqwtmwakjquhq.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_c4bUOWLPLtZSXVseuP67sg_Hzsn8w5O";
 const DISCORD_REDIRECT_URI = "https://laidouxichuan-ctrl.github.io/Takulog/";
-const DISCORD_SCOPE = "identify";
-const DISCORD_API = "https://discord.com/api/v10";
 
-function randomString(length=64){
-  const bytes=new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes,b=>('0'+b.toString(16)).slice(-2)).join('');
-}
-async function sha256Base64Url(text){
-  const data=new TextEncoder().encode(text);
-  const hash=await crypto.subtle.digest('SHA-256',data);
-  let binary='';
-  new Uint8Array(hash).forEach(b=>binary+=String.fromCharCode(b));
-  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth:{
+      persistSession:true,
+      autoRefreshToken:true,
+      detectSessionInUrl:true
+    }
+  }
+);
+
 function discordAvatarUrl(user){
-  if(user.avatar) return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`;
-  const index=(BigInt(user.id)>>22n)%6n;
-  return `https://cdn.discordapp.com/embed/avatars/${index}.png`;
+  const meta=user?.user_metadata||{};
+  if(meta.avatar_url)return meta.avatar_url;
+  if(meta.avatar) {
+    const discordId=meta.provider_id||meta.sub||"";
+    if(discordId)return `https://cdn.discordapp.com/avatars/${discordId}/${meta.avatar}.png?size=64`;
+  }
+  return "";
 }
+
+function discordUserFromSupabase(user){
+  if(!user)return null;
+  const meta=user.user_metadata||{};
+  return {
+    id:meta.provider_id||meta.sub||user.id,
+    global_name:meta.full_name||meta.name||meta.user_name||meta.preferred_username||"",
+    username:meta.user_name||meta.preferred_username||meta.name||"",
+    avatar:meta.avatar||"",
+    avatar_url:meta.avatar_url||""
+  };
+}
+
 function renderAccount(user){
   const area=document.getElementById('accountArea');
   if(!area)return;
   if(user){
-    const name=user.global_name || user.username || 'Discordユーザー';
-    area.innerHTML=`<div class="account-card"><img class="account-avatar" src="${discordAvatarUrl(user)}" alt="Discordアイコン"><div class="account-info"><div class="account-name" title="${escapeHtml(name)}">${escapeHtml(name)}</div><div class="account-state">ログイン中</div></div></div><button class="account-logout" onclick="discordLogout()">ログアウト</button>`;
+    const u=discordUserFromSupabase(user);
+    const name=u.global_name || u.username || 'Discordユーザー';
+    const avatar=discordAvatarUrl(u);
+    area.innerHTML=`<div class="account-card">${avatar?`<img class="account-avatar" src="${escapeHtml(avatar)}" alt="Discordアイコン">`:`<div class="account-avatar"></div>`}<div class="account-info"><div class="account-name" title="${escapeHtml(name)}">${escapeHtml(name)}</div><div class="account-state">ログイン中</div></div></div><button class="account-logout" onclick="discordLogout()">ログアウト</button>`;
   }else{
     area.innerHTML='<button class="account-login" onclick="discordLogin()">Discordでログイン</button><div class="auth-status" id="authStatus"></div>';
   }
 }
-function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\'/g,'&#39;');}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\'/g,'&#39;');
+}
 
 async function discordLogin(){
-  if(DISCORD_CLIENT_ID==='YOUR_DISCORD_APPLICATION_ID'){
-    alert('Discord Application IDがまだ設定されていません。HTML内のDISCORD_CLIENT_IDに、Discord Developer PortalのApplication IDを設定してください。');
-    return;
-  }
-  const verifier=randomString(64);
-  const state=randomString(32);
-  const challenge=await sha256Base64Url(verifier);
-  sessionStorage.setItem('discord_pkce_verifier',verifier);
-  sessionStorage.setItem('discord_oauth_state',state);
-  const params=new URLSearchParams({
-    client_id:DISCORD_CLIENT_ID,
-    response_type:'code',
-    redirect_uri:DISCORD_REDIRECT_URI,
-    scope:DISCORD_SCOPE,
-    state,
-    code_challenge:challenge,
-    code_challenge_method:'S256'
+  const {error}=await supabaseClient.auth.signInWithOAuth({
+    provider:'discord',
+    options:{
+      redirectTo:DISCORD_REDIRECT_URI
+    }
   });
-  location.href='https://discord.com/oauth2/authorize?'+params.toString();
+  if(error){
+    console.error(error);
+    alert('Discordログインに失敗しました。SupabaseのDiscord認証設定とRedirect URLを確認してください。');
+  }
+}
+
+async function restoreDiscordSession(){
+  try{
+    const {data,error}=await supabaseClient.auth.getSession();
+    if(error)throw error;
+    renderAccount(data.session?.user||null);
+  }catch(e){
+    console.error(e);
+    renderAccount(null);
+  }
 }
 
 async function handleDiscordCallback(){
-  const params=new URLSearchParams(location.search);
-  const code=params.get('code');
-  const state=params.get('state');
-  const error=params.get('error');
-  if(error){
-    history.replaceState({},'',DISCORD_REDIRECT_URI);
-    renderAccount(null);
-    const st=document.getElementById('authStatus'); if(st)st.textContent='ログインがキャンセルされました。';
-    return;
-  }
-  if(!code)return;
-  const savedState=sessionStorage.getItem('discord_oauth_state');
-  const verifier=sessionStorage.getItem('discord_pkce_verifier');
-  if(!savedState || !verifier || state!==savedState){
-    alert('Discord認証の確認に失敗しました。もう一度ログインしてください。');
-    history.replaceState({},'',DISCORD_REDIRECT_URI);
-    return;
-  }
   try{
-    const body=new URLSearchParams({
-      client_id:DISCORD_CLIENT_ID,
-      grant_type:'authorization_code',
-      code,
-      redirect_uri:DISCORD_REDIRECT_URI,
-      code_verifier:verifier
-    });
-    const tokenRes=await fetch(DISCORD_API+'/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
-    if(!tokenRes.ok)throw new Error('token');
-    const token=await tokenRes.json();
-    const userRes=await fetch(DISCORD_API+'/users/@me',{headers:{Authorization:'Bearer '+token.access_token}});
-    if(!userRes.ok)throw new Error('user');
-    const user=await userRes.json();
-    sessionStorage.setItem('discord_access_token',token.access_token);
-    sessionStorage.setItem('discord_user',JSON.stringify(user));
-    renderAccount(user);
+    const {data,error}=await supabaseClient.auth.getSession();
+    if(error)throw error;
+    renderAccount(data.session?.user||null);
+    if(location.search.includes('code=')){
+      history.replaceState({},'',DISCORD_REDIRECT_URI);
+    }
   }catch(e){
     console.error(e);
-    alert('Discordログインに失敗しました。Discord Developer PortalのPublic Client設定とリダイレクトURLを確認してください。');
     renderAccount(null);
-  }finally{
-    sessionStorage.removeItem('discord_pkce_verifier');
-    sessionStorage.removeItem('discord_oauth_state');
-    history.replaceState({},'',DISCORD_REDIRECT_URI);
   }
 }
-function discordLogout(){
-  sessionStorage.removeItem('discord_access_token');
-  sessionStorage.removeItem('discord_user');
+
+async function discordLogout(){
+  const {error}=await supabaseClient.auth.signOut();
+  if(error)console.error(error);
   renderAccount(null);
 }
-function restoreDiscordSession(){
-  try{
-    const user=JSON.parse(sessionStorage.getItem('discord_user')||'null');
-    renderAccount(user);
-  }catch(e){renderAccount(null);}
-}
+
+supabaseClient.auth.onAuthStateChange((_event,session)=>{
+  renderAccount(session?.user||null);
+});
 
 const legal={
 terms:{title:"利用規約",body:'<p class="p1"><span class="s1">利用規約</span></p><p class="p2"><span class="s2">第1条（本サービスについて）</span></p><p class="p3"><span class="s3">「卓ログ」は、TRPG等のシナリオについて、募集、参加希望、参加者管理、キャラクター情報の管理および開催可能日の確認等を行うためのサービスです。</span></p><p class="p3"><span class="s3">本サービスでは、特定のユーザーを固定的に「GM」または「PL」として扱わず、シナリオごとに作成者または参加者として利用します。</span></p><p class="p2"><span class="s2">第2条（Discordアカウントによるログイン）</span></p><p class="p3"><span class="s3">本サービスではDiscordのアカウントを利用した認証を行います。ログイン時にDiscordから取得したユーザー情報を、本サービスにおけるユーザーの識別および表示のために利用します。</span></p><p class="p2"><span class="s2">第3条（ユーザーの責任）</span></p><p class="p3"><span class="s3">ユーザーは、他のユーザーへのなりすまし、不正アクセス、虚偽情報の登録、サービス運営の妨害、他のユーザーへの迷惑行為、法令または公序良俗に反する行為を行ってはいけません。</span></p><p class="p2"><span class="s2">第4条（シナリオおよびキャラクター情報）</span></p><p class="p3"><span class="s3">ユーザーが登録するシナリオ情報、キャラクター名、キャラクターシートへのリンク、コメント等については、ユーザー自身が責任をもって登録してください。外部サービスを利用する場合は、そのサービスの利用規約等にも従ってください。</span></p><p class="p2"><span class="s2">第5条（シナリオの管理）</span></p><p class="p3"><span class="s3">シナリオ作成者には、そのシナリオに関する管理権限が付与されます。作成者は参加者の参加を取り消すことができます。参加者自身や他の参加者は、他人の参加を取り消すことはできません。</span></p><p class="p2"><span class="s2">第6条（サービスの変更・停止）</span></p><p class="p3"><span class="s3">運営者は、保守、障害、セキュリティ上の理由、外部サービスの仕様変更その他必要と判断した場合、本サービスの全部または一部を変更、停止または終了することがあります。</span></p><p class="p2"><span class="s2">第7条（免責事項）</span></p><p class="p3"><span class="s3">運営者は、本サービスの完全性、正確性、継続性または特定目的への適合性を保証するものではありません。外部サービス等の事情により機能が利用できなくなる場合があります。</span></p><p class="p2"><span class="s2">第8条（利用規約の変更）</span></p><p class="p3"><span class="s3">運営者は必要に応じて本規約を変更することがあります。変更後の規約は、本サービス上で公開した時点または別途定めた時点から効力を生じます。</span></p><p class="p2"><span class="s2">第9条（準拠法）</span></p><p class="p3"><span class="s3">本規約は日本法に準拠して解釈されます。</span></p><p class="p2"><span class="s2">第10条（お問い合わせ）</span></p><p class="p3"><span class="s3">お問い合わせ：umineko／laidouxichuan@gmail.com</span></p>'},
