@@ -481,10 +481,13 @@ function renderAccount(user){
   if(!area)return;
   if(user){
     const u=discordUserFromSupabase(user);
+    // Supabaseのログイン情報を、既存のシナリオ機能でも使える形に同期
+    sessionStorage.setItem('discord_user',JSON.stringify(u));
     const name=u.global_name || u.username || 'Discordユーザー';
     const avatar=discordAvatarUrl(u);
     area.innerHTML=`<div class="account-card">${avatar?`<img class="account-avatar" src="${escapeHtml(avatar)}" alt="Discordアイコン">`:`<div class="account-avatar"></div>`}<div class="account-info"><div class="account-name" title="${escapeHtml(name)}">${escapeHtml(name)}</div><div class="account-state">ログイン中</div></div></div><button class="account-logout" onclick="discordLogout()">ログアウト</button>`;
   }else{
+    sessionStorage.removeItem('discord_user');
     area.innerHTML='<button class="account-login" onclick="discordLogin()">Discordでログイン</button><div class="auth-status" id="authStatus"></div>';
   }
 }
