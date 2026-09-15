@@ -180,6 +180,21 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .schedule-actions .danger-action{color:#b44955}
 .schedule-actions button:hover{filter:brightness(1.03)}
 .user-picker-note{font-size:12px;color:var(--muted)}
+.manage-intro{font-size:13px;color:var(--muted);line-height:1.7;margin:-4px 0 14px}
+.manage-list{display:grid;gap:10px}
+.manage-row{display:grid;grid-template-columns:minmax(140px,0.7fr) minmax(220px,1.3fr) auto;gap:9px;align-items:center;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fbfcfe}
+.manage-row input{width:100%;height:43px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;padding:0 12px;color:var(--text);font:inherit;outline:none}
+.manage-row input:focus{border-color:#65b4ff;box-shadow:0 0 0 3px #65b4ff22}
+.manage-row .manage-action{border:1px solid #dce3eb;border-radius:8px;background:#f7f9fc;color:#b44955;font:inherit;font-size:13px;font-weight:700;padding:9px 14px;cursor:pointer;white-space:nowrap}
+.manage-row .manage-action:hover{background:#fff0f2}
+.manage-row.lost{opacity:.55}
+.manage-row.lost input{text-decoration:line-through}
+.manage-status{font-size:12px;color:var(--muted);padding:2px 4px}
+@media(max-width:700px){
+  .manage-row{grid-template-columns:1fr}
+  .manage-row .manage-action{width:100%}
+}
+
 @media(max-width:700px){
   .schedule-grid{grid-template-columns:1fr}
   .schedule-field.full{grid-column:auto}
@@ -203,6 +218,8 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <button data-page="プレイ済みシナリオ" onclick="placeholder(this)"><span class="icon">✓</span><span class="label">プレイ済みシナリオ</span></button>
 <button data-page="チャットパレット生成" onclick="chatPalette(this)"><span class="icon">▤</span><span class="label">チャットパレット生成</span></button>
 <button data-page="デイコード" onclick="daycodePage(this)"><span class="icon">▦</span><span class="label">デイコード</span></button>
+<button data-page="いあきゃら管理" onclick="iacharaManagePage(this)"><span class="icon">♙</span><span class="label">いあきゃら管理</span></button>
+<button data-page="ココフォリア管理" onclick="cocofoliaManagePage(this)"><span class="icon">▣</span><span class="label">ココフォリア管理</span></button>
 </nav>
 <div class="account-area" id="accountArea"></div>
 </aside>
@@ -224,6 +241,20 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 
 
 
+
+<section class="card schedule-page" id="iacharaManagePage">
+  <h2 class="section-title">いあきゃら管理</h2>
+  <div class="manage-intro">登録したキャラクターは、シナリオ参加希望時のキャラクター選択に使用できます。ロストしたキャラクターは選択肢から非表示になります。</div>
+  <div id="iacharaManageList" class="manage-list"></div>
+  <div class="form-actions" style="justify-content:flex-start"><button class="primary palette-button" onclick="addIacharaCharacter()">＋ 追加</button></div>
+</section>
+
+<section class="card schedule-page" id="cocofoliaManagePage">
+  <h2 class="section-title">ココフォリア管理</h2>
+  <div class="manage-intro">登録したルームは、シナリオ予定作成時のココフォリアURL入力に使用できます。</div>
+  <div id="cocofoliaManageList" class="manage-list"></div>
+  <div class="form-actions" style="justify-content:flex-start"><button class="primary palette-button" onclick="addCocofoliaRoom()">＋ 追加</button></div>
+</section>
 
 <section class="card schedule-page" id="scheduleCreatePage">
   <h2 class="section-title" id="scheduleFormTitle">シナリオ予定作成</h2>
@@ -274,8 +305,12 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
       </div>
 
       <div class="schedule-field full">
-        <label for="scheduleCocofolia">ココフォリアURL <span class="required">＊</span></label>
-        <input id="scheduleCocofolia" type="url" placeholder="https://ccfolia.com/rooms/...">
+        <label for="scheduleCocofoliaRoom">ココフォリアルーム <span class="required">＊</span></label>
+        <select id="scheduleCocofoliaRoom" onchange="selectCocofoliaRoom()">
+          <option value="">新規ルーム</option>
+        </select>
+        <input id="scheduleCocofolia" type="url" placeholder="https://ccfolia.com/rooms/..." style="margin-top:9px">
+        <div class="schedule-help">登録済みのルームを選ぶとURLが自動入力されます。新規ルームの場合はURLを入力してください。</div>
       </div>
 
       <div class="schedule-field full">
@@ -317,7 +352,10 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
       </div>
       <div class="schedule-field">
         <label for="scheduleApplyCharacter">キャラクター名</label>
-        <input id="scheduleApplyCharacter" type="text" placeholder="キャラクター名">
+        <select id="scheduleApplyCharacter" onchange="selectIacharaCharacter()">
+          <option value="">新規キャラクター</option>
+        </select>
+        <input id="scheduleApplyCharacterNew" type="text" placeholder="新規キャラクター名" style="display:none;margin-top:9px">
       </div>
       <div class="schedule-field full">
         <label for="scheduleApplyIachara">いあきゃらのURL</label>
@@ -560,6 +598,8 @@ async function discordLogout(){
 
 supabaseClient.auth.onAuthStateChange((_event,session)=>{
   renderAccount(session?.user||null);
+  if(session?.user) refreshManagedData();
+  else { managedIacharaCharacters=[]; managedCocofoliaRooms=[]; managedDataReady=false; }
 });
 
 const legal={
@@ -579,6 +619,8 @@ function home(btn){
   document.getElementById("scheduleApplyPage").style.display="none";
   document.getElementById("scheduleJoinedPage").style.display="none";
   document.getElementById("schedulePlayedPage").style.display="none";
+  document.getElementById("iacharaManagePage").style.display="none";
+  document.getElementById("cocofoliaManagePage").style.display="none";
   document.getElementById("homeRecruit").style.display="block";
   document.querySelector(".create").style.display="block";
   document.querySelector(".calendar-card").style.display="block";
@@ -590,6 +632,8 @@ function placeholder(btn){
   if(btn.dataset.page==="予定作成済みシナリオ"){scheduleManagePage(btn);return}
   if(btn.dataset.page==="参加希望済みシナリオ"){scheduleJoinedPage(btn);return}
   if(btn.dataset.page==="プレイ済みシナリオ"){schedulePlayedPage(btn);return}
+  if(btn.dataset.page==="いあきゃら管理"){iacharaManagePage(btn);return}
+  if(btn.dataset.page==="ココフォリア管理"){cocofoliaManagePage(btn);return}
   document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
   document.getElementById("pageTitle").textContent=btn.dataset.page;
@@ -601,10 +645,193 @@ function placeholder(btn){
   document.getElementById("scheduleApplyPage").style.display="none";
   document.getElementById("scheduleJoinedPage").style.display="none";
   document.getElementById("schedulePlayedPage").style.display="none";
+  document.getElementById("iacharaManagePage").style.display="none";
+  document.getElementById("cocofoliaManagePage").style.display="none";
   document.getElementById("homeRecruit").style.display="block";
   document.querySelector(".create").style.display="block";
   document.querySelector(".calendar-card").style.display="block";
   alert(btn.dataset.page+" は現在、機能を実装していません。\nページ構成のみ用意しています。");
+}
+
+/* ===== ユーザー別 いあきゃら / ココフォリア管理 ===== */
+let managedIacharaCharacters=[];
+let managedCocofoliaRooms=[];
+let managedDataReady=false;
+
+async function loadManagedData(){
+  if(!currentUserId()){managedIacharaCharacters=[];managedCocofoliaRooms=[];managedDataReady=false;return}
+  const [{data:chars,error:charError},{data:rooms,error:roomError}]=await Promise.all([
+    supabaseClient.from("user_characters").select("*").eq("user_id",currentUserId()).order("created_at",{ascending:true}),
+    supabaseClient.from("user_cocofolia_rooms").select("*").eq("user_id",currentUserId()).order("created_at",{ascending:true})
+  ]);
+  if(charError)throw charError;
+  if(roomError)throw roomError;
+  managedIacharaCharacters=chars||[];
+  managedCocofoliaRooms=rooms||[];
+  managedDataReady=true;
+}
+
+async function refreshManagedData(){
+  try{
+    await loadManagedData();
+    renderIacharaManage();
+    renderCocofoliaManage();
+    refreshIacharaDropdown();
+    refreshCocofoliaDropdown();
+  }catch(e){
+    console.error(e);
+    managedDataReady=false;
+    alert("管理データの読み込みに失敗しました。Supabaseのテーブルと権限設定を確認してください。");
+  }
+}
+
+function iacharaManagePage(btn){
+  activateNav(btn,"いあきゃら管理");
+  showOnlySchedule("iacharaManagePage");
+  refreshManagedData();
+}
+function cocofoliaManagePage(btn){
+  activateNav(btn,"ココフォリア管理");
+  showOnlySchedule("cocofoliaManagePage");
+  refreshManagedData();
+}
+
+function renderIacharaManage(){
+  const box=document.getElementById("iacharaManageList");if(!box)return;
+  box.innerHTML=managedIacharaCharacters.length?managedIacharaCharacters.map(c=>`
+    <div class="manage-row ${c.is_lost?"lost":""}" data-id="${scenarioEscape(c.id)}">
+      <input type="text" value="${scenarioEscape(c.character_name||"")}" placeholder="キャラクター名" oninput="queueCharacterSave('${scenarioEscape(c.id)}',this)">
+      <input type="url" value="${scenarioEscape(c.iachara_url||"")}" placeholder="https://iachara.com/..." oninput="queueCharacterSave('${scenarioEscape(c.id)}',this)">
+      ${c.is_lost?'<span class="manage-status">ロスト済み</span>':`<button class="manage-action" onclick="markCharacterLost('${scenarioEscape(c.id)}')">ロスト</button>`}
+    </div>`).join(""):'<div class="empty">登録されているキャラクターはありません。</div>';
+}
+function renderCocofoliaManage(){
+  const box=document.getElementById("cocofoliaManageList");if(!box)return;
+  box.innerHTML=managedCocofoliaRooms.length?managedCocofoliaRooms.map(r=>`
+    <div class="manage-row" data-id="${scenarioEscape(r.id)}">
+      <input type="text" value="${scenarioEscape(r.room_name||"")}" placeholder="ルーム名" oninput="queueRoomSave('${scenarioEscape(r.id)}',this)">
+      <input type="url" value="${scenarioEscape(r.room_url||"")}" placeholder="https://ccfolia.com/rooms/..." oninput="queueRoomSave('${scenarioEscape(r.id)}',this)">
+      <button class="manage-action" onclick="deleteCocofoliaRoom('${scenarioEscape(r.id)}')">削除</button>
+    </div>`).join(""):'<div class="empty">登録されているルームはありません。</div>';
+}
+
+let characterSaveTimers=new Map();
+let roomSaveTimers=new Map();
+function queueCharacterSave(id,input){
+  clearTimeout(characterSaveTimers.get(id));
+  const row=input.closest(".manage-row");
+  const inputs=row?.querySelectorAll("input");
+  if(!inputs||inputs.length<2)return;
+  const timer=setTimeout(async()=>{
+    try{
+      const name=inputs[0].value.trim(),url=inputs[1].value.trim();
+      const {error}=await supabaseClient.from("user_characters").update({character_name:name,iachara_url:url||null,updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUserId());
+      if(error)throw error;
+      const item=managedIacharaCharacters.find(x=>x.id===id);if(item){item.character_name=name;item.iachara_url=url;}
+      refreshIacharaDropdown();
+    }catch(e){console.error(e);alert("キャラクター情報の保存に失敗しました。");}
+  },500);
+  characterSaveTimers.set(id,timer);
+}
+function queueRoomSave(id,input){
+  clearTimeout(roomSaveTimers.get(id));
+  const row=input.closest(".manage-row");
+  const inputs=row?.querySelectorAll("input");
+  if(!inputs||inputs.length<2)return;
+  const timer=setTimeout(async()=>{
+    try{
+      const name=inputs[0].value.trim(),url=inputs[1].value.trim();
+      const {error}=await supabaseClient.from("user_cocofolia_rooms").update({room_name:name,room_url:url,updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUserId());
+      if(error)throw error;
+      const item=managedCocofoliaRooms.find(x=>x.id===id);if(item){item.room_name=name;item.room_url=url;}
+      refreshCocofoliaDropdown();
+    }catch(e){console.error(e);alert("ココフォリアルームの保存に失敗しました。");}
+  },500);
+  roomSaveTimers.set(id,timer);
+}
+
+async function addIacharaCharacter(){
+  if(!currentUserId()){alert("Discordでログインしてください。");return}
+  try{
+    const {data,error}=await supabaseClient.from("user_characters").insert({user_id:currentUserId(),character_name:"",iachara_url:null,is_lost:false}).select("*").single();
+    if(error)throw error;
+    managedIacharaCharacters.push(data);
+    renderIacharaManage();
+    const rows=document.querySelectorAll("#iacharaManageList .manage-row");
+    const row=rows[rows.length-1];
+    row?.querySelector("input")?.focus();
+    refreshIacharaDropdown();
+  }catch(e){console.error(e);alert("キャラクターの追加に失敗しました。");}
+}
+async function markCharacterLost(id){
+  if(!confirm("このキャラクターをロスト扱いにしますか？\n以後、参加希望時の選択肢には表示されません。"))return;
+  try{
+    const {error}=await supabaseClient.from("user_characters").update({is_lost:true,updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUserId());
+    if(error)throw error;
+    const item=managedIacharaCharacters.find(x=>x.id===id);if(item)item.is_lost=true;
+    renderIacharaManage();refreshIacharaDropdown();
+  }catch(e){console.error(e);alert("ロスト設定に失敗しました。");}
+}
+async function addCocofoliaRoom(){
+  if(!currentUserId()){alert("Discordでログインしてください。");return}
+  try{
+    const {data,error}=await supabaseClient.from("user_cocofolia_rooms").insert({user_id:currentUserId(),room_name:"",room_url:""}).select("*").single();
+    if(error)throw error;
+    managedCocofoliaRooms.push(data);
+    renderCocofoliaManage();
+    const rows=document.querySelectorAll("#cocofoliaManageList .manage-row");
+    const row=rows[rows.length-1];
+    row?.querySelector("input")?.focus();
+    refreshCocofoliaDropdown();
+  }catch(e){console.error(e);alert("ココフォリアルームの追加に失敗しました。");}
+}
+async function deleteCocofoliaRoom(id){
+  if(!confirm("このココフォリアルームを削除しますか？"))return;
+  try{
+    const {error}=await supabaseClient.from("user_cocofolia_rooms").delete().eq("id",id).eq("user_id",currentUserId());
+    if(error)throw error;
+    managedCocofoliaRooms=managedCocofoliaRooms.filter(x=>x.id!==id);
+    renderCocofoliaManage();refreshCocofoliaDropdown();
+  }catch(e){console.error(e);alert("ココフォリアルームの削除に失敗しました。");}
+}
+
+function refreshIacharaDropdown(selectedValue){
+  const select=document.getElementById("scheduleApplyCharacter");
+  if(!select)return;
+  const current=selectedValue!==undefined?selectedValue:select.value;
+  select.innerHTML='<option value="">新規キャラクター</option>'+
+    managedIacharaCharacters.filter(c=>!c.is_lost&&c.character_name).map(c=>`<option value="${scenarioEscape(c.id)}">${scenarioEscape(c.character_name)}</option>`).join("");
+  if(current && managedIacharaCharacters.some(c=>c.id===current&&!c.is_lost))select.value=current;
+  else select.value="";
+}
+function refreshCocofoliaDropdown(selectedValue){
+  const select=document.getElementById("scheduleCocofoliaRoom");
+  if(!select)return;
+  const current=selectedValue!==undefined?selectedValue:select.value;
+  select.innerHTML='<option value="">新規ルーム</option>'+
+    managedCocofoliaRooms.filter(r=>r.room_name&&r.room_url).map(r=>`<option value="${scenarioEscape(r.id)}">${scenarioEscape(r.room_name)}</option>`).join("");
+  if(current && managedCocofoliaRooms.some(r=>r.id===current))select.value=current;
+  else select.value="";
+}
+function selectIacharaCharacter(){
+  const id=document.getElementById("scheduleApplyCharacter").value;
+  const newName=document.getElementById("scheduleApplyCharacterNew");
+  if(!id){
+    newName.style.display="block";
+    document.getElementById("scheduleApplyIachara").value="";
+    return;
+  }
+  newName.style.display="none";
+  const c=managedIacharaCharacters.find(x=>x.id===id&&!x.is_lost);
+  document.getElementById("scheduleApplyIachara").value=c?.iachara_url||"";
+}
+function selectCocofoliaRoom(){
+  const id=document.getElementById("scheduleCocofoliaRoom").value;
+  const input=document.getElementById("scheduleCocofolia");
+  if(!id){input.value="";input.readOnly=false;return}
+  const r=managedCocofoliaRooms.find(x=>x.id===id);
+  input.value=r?.room_url||"";
+  input.readOnly=true;
 }
 
 /* ===== シナリオ予定管理 ===== */
@@ -715,7 +942,7 @@ async function scenarioSave(){
 }
 
 function showOnlySchedule(id){
-  const ids=["scheduleCreatePage","scheduleManagePage","scheduleApplyPage","scheduleJoinedPage","schedulePlayedPage","chatPaletteOutputPage","palettePage","daycodePage"];
+  const ids=["scheduleCreatePage","scheduleManagePage","scheduleApplyPage","scheduleJoinedPage","schedulePlayedPage","iacharaManagePage","cocofoliaManagePage","chatPaletteOutputPage","palettePage","daycodePage"];
   ids.forEach(x=>{const e=document.getElementById(x);if(e)e.style.display=(x===id?"block":"none")});
   document.getElementById("homeRecruit").style.display="none";
   document.querySelector(".create").style.display="none";
@@ -732,6 +959,7 @@ async function scenarioSchedulePage(btn){
   scenarioEditingId=null;
   resetScheduleForm();
   if(!scenarioReady)await refreshScenarioData();
+  if(currentUserId() && !managedDataReady)await refreshManagedData();
   renderConfirmedInputs();
 }
 async function scheduleManagePage(btn){
@@ -758,7 +986,9 @@ function resetScheduleForm(){
   document.getElementById("scheduleCapacityMax").value="";
   document.getElementById("scheduleCapacityExact").value="";
   document.getElementById("scheduleDescription").value="";
+  refreshCocofoliaDropdown("");
   document.getElementById("scheduleCocofolia").value="";
+  document.getElementById("scheduleCocofolia").readOnly=false;
   document.getElementById("scheduleSkpRecruit").value="no";
   document.getElementById("scheduleConfirmedCount").value="";
   document.getElementById("confirmedInputs").innerHTML="";
@@ -873,6 +1103,16 @@ async function saveScenarioSchedule(){
       if(error)throw error;
     }
 
+    const selectedRoomId=document.getElementById("scheduleCocofoliaRoom").value;
+    if(!selectedRoomId && cocofolia && confirm("このココフォリアURLをココフォリア管理に保存しますか？")){
+      const suggestedName=prompt("管理用のルーム名を入力してください。\n※この名前はURLを呼び出すためだけに使用します。","");
+      if(suggestedName!==null && suggestedName.trim()){
+        const {data:roomData,error:roomError}=await supabaseClient.from("user_cocofolia_rooms").insert({user_id:currentUserId(),room_name:suggestedName.trim(),room_url:cocofolia}).select("*").single();
+        if(roomError)throw roomError;
+        managedCocofoliaRooms.push(roomData);
+      }
+    }
+
     scenarioEditingId=null;
     await refreshScenarioData();
     alert("シナリオ予定を作成しました。");
@@ -946,14 +1186,26 @@ function renderJoinedSchedules(){
   const list=scenarioSchedules.filter(s=>isScenarioParticipant(s));
   box.innerHTML=list.length?list.map(s=>renderScheduleCard(s,"joined")).join(""):'<div class="empty">参加希望済みのシナリオはありません。</div>';
 }
-function openScheduleApply(id,isEdit){
+async function openScheduleApply(id,isEdit){
   const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
+  if(currentUserId() && !managedDataReady) await refreshManagedData();
   const p=participantOf(s);
   scenarioApplyId=id;
   document.getElementById("scheduleApplyTitle").textContent=isEdit?"参加内容を変更":"シナリオに参加する";
   document.getElementById("scheduleApplyUser").value=currentUserName();
-  document.getElementById("scheduleApplyCharacter").value=p?.characterName||"";
-  document.getElementById("scheduleApplyIachara").value=p?.iacharaUrl||"";
+  refreshIacharaDropdown("");
+  const savedChar=managedIacharaCharacters.find(c=>!c.is_lost&&c.character_name===p?.characterName);
+  if(savedChar){
+    document.getElementById("scheduleApplyCharacter").value=savedChar.id;
+    document.getElementById("scheduleApplyCharacterNew").value="";
+    document.getElementById("scheduleApplyCharacterNew").style.display="none";
+    document.getElementById("scheduleApplyIachara").value=savedChar.iachara_url||"";
+  }else{
+    document.getElementById("scheduleApplyCharacter").value="";
+    document.getElementById("scheduleApplyCharacterNew").value=p?.characterName||"";
+    document.getElementById("scheduleApplyCharacterNew").style.display="block";
+    document.getElementById("scheduleApplyIachara").value=p?.iacharaUrl||"";
+  }
   document.getElementById("scheduleApplyOther").value=p?.other||"";
   activateNav(null,isEdit?"参加内容を変更":"シナリオに参加する");
   showOnlySchedule("scheduleApplyPage");
@@ -965,7 +1217,8 @@ function cancelScheduleApply(){
 async function saveScenarioParticipant(){
   const s=scenarioSchedules.find(x=>x.id===scenarioApplyId);if(!s)return;
   if(!currentUserId()){alert("Discordでログインしてください。");return}
-  const characterName=document.getElementById("scheduleApplyCharacter").value.trim();
+  const selectedCharacterId=document.getElementById("scheduleApplyCharacter").value;
+  const characterName=selectedCharacterId ? (managedIacharaCharacters.find(c=>c.id===selectedCharacterId)?.character_name||"") : document.getElementById("scheduleApplyCharacterNew").value.trim();
   const iacharaUrl=document.getElementById("scheduleApplyIachara").value.trim();
   const other=document.getElementById("scheduleApplyOther").value.trim();
   if(!characterName){alert("キャラクター名を入力してください。");return}
@@ -984,7 +1237,15 @@ async function saveScenarioParticipant(){
       });
       if(error)throw error;
     }
+    if(!selectedCharacterId && characterName && iacharaUrl && !managedIacharaCharacters.some(c=>!c.is_lost&&c.character_name===characterName&&c.iachara_url===iacharaUrl)){
+      if(confirm(`「${characterName}」をいあきゃら管理に保存しますか？`)){
+        const {data:charData,error:charError}=await supabaseClient.from("user_characters").insert({user_id:currentUserId(),character_name:characterName,iachara_url:iacharaUrl,is_lost:false}).select("*").single();
+        if(charError)throw charError;
+        managedIacharaCharacters.push(charData);
+      }
+    }
     await refreshScenarioData();
+    refreshIacharaDropdown();
     alert(existing?"参加内容を変更しました。":"シナリオへの参加希望を登録しました。");
     await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
   }catch(e){
@@ -1084,7 +1345,10 @@ function editScenarioSchedule(id){
   document.getElementById("scheduleCapacityMax").value=s.capacityMax||"";
   document.getElementById("scheduleCapacityExact").value=s.capacityExact||"";
   document.getElementById("scheduleDescription").value=s.description||"";
+  const savedRoom=managedCocofoliaRooms.find(r=>r.room_url===s.cocofolia);
+  refreshCocofoliaDropdown(savedRoom?.id||"");
   document.getElementById("scheduleCocofolia").value=s.cocofolia||"";
+  document.getElementById("scheduleCocofolia").readOnly=!!savedRoom;
   document.getElementById("scheduleSkpRecruit").value=s.skpRecruit?"yes":"no";
   const confirmed=s.participants.filter(p=>p.isConfirmed&&(!p.role||p.role==="pl"));
   document.getElementById("scheduleConfirmedCount").value=confirmed.length||"";
