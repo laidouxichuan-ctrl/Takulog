@@ -168,8 +168,12 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .participant-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:13px}
 .participant-row .participant-name{font-weight:750}
 .participant-row .char{color:#596675}
-.schedule-link{color:#1762c7;text-decoration:none;font-weight:700}
-.schedule-link:hover{text-decoration:underline}
+.schedule-link{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 14px;border:1px solid #dce3eb;border-radius:8px;background:#f7f9fc;color:#596675;text-decoration:none;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.schedule-link:hover{background:#eef3f8;filter:brightness(1.02)}
+.schedule-link.primary-link{border:0;color:#fff;background:linear-gradient(110deg,var(--blue1),var(--blue2) 55%,var(--blue3));box-shadow:0 3px 8px #2878e822}
+.schedule-link.primary-link:hover{filter:brightness(1.03)}
+.participant-role{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#eef6ff;color:#1762c7;font-size:11px;font-weight:800}
+.participant-role.skp{background:#f4efff;color:#7251b5}
 .schedule-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .schedule-actions button{border:1px solid #dce3eb;border-radius:8px;background:#f7f9fc;color:#596675;font:inherit;font-size:13px;font-weight:700;padding:9px 14px;cursor:pointer}
 .schedule-actions .primary-action{border:0;color:#fff;background:linear-gradient(110deg,var(--blue1),var(--blue2) 55%,var(--blue3))}
@@ -275,6 +279,15 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
       </div>
 
       <div class="schedule-field full">
+        <label for="scheduleSkpRecruit">SKP募集 <span class="required">＊</span></label>
+        <select id="scheduleSkpRecruit">
+          <option value="no">募集しない</option>
+          <option value="yes">募集する</option>
+        </select>
+        <div class="schedule-help">「募集する」を選ぶと、参加者側に「PLとして参加希望」と「SKPとして参加希望」が表示されます。</div>
+      </div>
+
+      <div class="schedule-field full">
         <label for="scheduleConfirmedCount">確定参加者（任意）</label>
         <input id="scheduleConfirmedCount" type="number" min="0" placeholder="確定参加者の人数" oninput="renderConfirmedInputs()">
         <div class="schedule-help">確定参加者は定員に含まれます。KP本人は選択できません。</div>
@@ -325,6 +338,11 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <section class="card schedule-page" id="scheduleJoinedPage">
   <h2 class="section-title">参加希望済みシナリオ</h2>
   <div id="scheduleJoinedList"></div>
+</section>
+
+<section class="card schedule-page" id="schedulePlayedPage">
+  <h2 class="section-title">プレイ済みシナリオ</h2>
+  <div id="schedulePlayedList"></div>
 </section>
 
 <section class="card palette-page" id="chatPaletteOutputPage" style="display:none">
@@ -560,6 +578,7 @@ function home(btn){
   document.getElementById("scheduleManagePage").style.display="none";
   document.getElementById("scheduleApplyPage").style.display="none";
   document.getElementById("scheduleJoinedPage").style.display="none";
+  document.getElementById("schedulePlayedPage").style.display="none";
   document.getElementById("homeRecruit").style.display="block";
   document.querySelector(".create").style.display="block";
   document.querySelector(".calendar-card").style.display="block";
@@ -570,6 +589,7 @@ function placeholder(btn){
   if(btn.dataset.page==="シナリオ予定作成"){scenarioSchedulePage(btn);return}
   if(btn.dataset.page==="予定作成済みシナリオ"){scheduleManagePage(btn);return}
   if(btn.dataset.page==="参加希望済みシナリオ"){scheduleJoinedPage(btn);return}
+  if(btn.dataset.page==="プレイ済みシナリオ"){schedulePlayedPage(btn);return}
   document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
   document.getElementById("pageTitle").textContent=btn.dataset.page;
@@ -580,6 +600,7 @@ function placeholder(btn){
   document.getElementById("scheduleManagePage").style.display="none";
   document.getElementById("scheduleApplyPage").style.display="none";
   document.getElementById("scheduleJoinedPage").style.display="none";
+  document.getElementById("schedulePlayedPage").style.display="none";
   document.getElementById("homeRecruit").style.display="block";
   document.querySelector(".create").style.display="block";
   document.querySelector(".calendar-card").style.display="block";
@@ -614,7 +635,8 @@ function scheduleCapacity(s){
 }
 function scheduleMax(s){return s.capacityMode==="range"?Number(s.capacityMax):Number(s.capacityExact)}
 function scheduleMin(s){return s.capacityMode==="range"?Number(s.capacityMin):Number(s.capacityExact)}
-function scheduleRemaining(s){return Math.max(0,scheduleMax(s)-(s.participants||[]).length)}
+function schedulePLCount(s){return (s.participants||[]).filter(p=>(p.role||"pl")==="pl").length}
+function scheduleRemaining(s){return Math.max(0,scheduleMax(s)-schedulePLCount(s))}
 function scheduleRangeText(s){return s.capacityMode==="range"?`${scheduleMin(s)}～${scheduleMax(s)}`:String(scheduleMax(s))}
 function isScenarioOwner(s){return s.ownerId===currentUserId()}
 function isScenarioParticipant(s){return (s.participants||[]).some(p=>p.userId===currentUserId())}
@@ -633,6 +655,7 @@ function dbScenarioToLocal(row,participants){
     capacityExact:row.capacity_exact,
     description:row.description||"",
     cocofolia:row.cocofolia_url||"",
+    skpRecruit:!!row.skp_recruit,
     createdAt:row.created_at ? new Date(row.created_at).getTime() : Date.now(),
     status:row.status||"recruiting",
     finalDate:row.final_date||"",
@@ -642,6 +665,7 @@ function dbScenarioToLocal(row,participants){
       characterName:p.character_name||"",
       iacharaUrl:p.character_sheet_url||"",
       other:p.other||"",
+      role:p.role||"pl",
       isConfirmed:!!p.is_confirmed
     }))
   };
@@ -678,6 +702,7 @@ async function refreshScenarioData(){
     renderAllScenarioData();
     if(document.getElementById("scheduleManagePage").style.display==="block")renderScheduleManage();
     if(document.getElementById("scheduleJoinedPage").style.display==="block")renderJoinedSchedules();
+    if(document.getElementById("schedulePlayedPage").style.display==="block")renderSchedulePlayed();
   }catch(e){
     console.error(e);
     scenarioReady=false;
@@ -690,7 +715,7 @@ async function scenarioSave(){
 }
 
 function showOnlySchedule(id){
-  const ids=["scheduleCreatePage","scheduleManagePage","scheduleApplyPage","scheduleJoinedPage","chatPaletteOutputPage","palettePage","daycodePage"];
+  const ids=["scheduleCreatePage","scheduleManagePage","scheduleApplyPage","scheduleJoinedPage","schedulePlayedPage","chatPaletteOutputPage","palettePage","daycodePage"];
   ids.forEach(x=>{const e=document.getElementById(x);if(e)e.style.display=(x===id?"block":"none")});
   document.getElementById("homeRecruit").style.display="none";
   document.querySelector(".create").style.display="none";
@@ -734,6 +759,7 @@ function resetScheduleForm(){
   document.getElementById("scheduleCapacityExact").value="";
   document.getElementById("scheduleDescription").value="";
   document.getElementById("scheduleCocofolia").value="";
+  document.getElementById("scheduleSkpRecruit").value="no";
   document.getElementById("scheduleConfirmedCount").value="";
   document.getElementById("confirmedInputs").innerHTML="";
   toggleCapacityFields();
@@ -783,7 +809,7 @@ function collectConfirmed(){
     const select=x.querySelector(".confirmed-user");
     const userId=select.value;
     const userName=select.options[select.selectedIndex]?.textContent||"";
-    return {userId,userName,characterName:x.querySelector(".confirmed-char").value.trim(),iacharaUrl:x.querySelector(".confirmed-url").value.trim(),other:"",isConfirmed:true};
+    return {userId,userName,characterName:x.querySelector(".confirmed-char").value.trim(),iacharaUrl:x.querySelector(".confirmed-url").value.trim(),other:"",role:"pl",isConfirmed:true};
   }).filter(p=>p.userId);
 }
 
@@ -814,6 +840,7 @@ async function saveScenarioSchedule(){
     capacity_exact:mode==="exact"?exact:null,
     description:document.getElementById("scheduleDescription").value.trim(),
     cocofolia_url:cocofolia,
+    skp_recruit:document.getElementById("scheduleSkpRecruit").value==="yes",
     status:"recruiting",
     final_date:null
   };
@@ -839,6 +866,7 @@ async function saveScenarioSchedule(){
         character_name:p.characterName||null,
         character_sheet_url:p.iacharaUrl||null,
         other:p.other||null,
+        role:p.role||"pl",
         is_confirmed:true
       }));
       const {error}=await supabaseClient.from("scenario_participants").insert(rows);
@@ -860,20 +888,31 @@ function renderScheduleCard(s,mode="home"){
   const me=participantOf(s);
   const rows=(s.participants||[]).map(p=>{
     const own=p.userId===currentUserId();
+    const isSkp=(p.role||"pl")==="skp";
     return `<div class="participant-row">
+      <span class="participant-role ${isSkp?"skp":""}">${isSkp?"SKP":"PL"}</span>
       <span class="participant-name">${scenarioEscape(p.userName)}</span>
       ${p.characterName?`<span class="char">（${scenarioEscape(p.characterName)}）</span>`:""}
       ${p.iacharaUrl?`<a class="schedule-link" href="${scenarioEscape(p.iacharaUrl)}" target="_blank" rel="noopener">いあきゃら</a>`:""}
-      ${own?`<button onclick="openScheduleApply('${s.id}',true)">内容変更</button>`:""}
-      ${owner?`<button class="danger-action" onclick="cancelScenarioParticipant('${s.id}','${p.userId}')">参加取り消し</button>`:""}
+      ${own&&s.status!=="completed"&&isSkp?`<button onclick="cancelOwnSkp('${s.id}')">希望を取り消す</button>`:""}
+      ${own&&s.status!=="completed"&&!isSkp?`<button onclick="openScheduleApply('${s.id}',true)">内容変更</button>`:""}
+      ${owner&&s.status!=="completed"?`<button class="danger-action" onclick="cancelScenarioParticipant('${s.id}','${p.userId}')">参加取り消し</button>`:""}
     </div>`;
   }).join("");
-  const canJoin=!owner&&!me&&scheduleRemaining(s)>0&&s.status==="recruiting";
+
+  const canJoinPL=!owner&&!me&&scheduleRemaining(s)>0&&s.status==="recruiting";
+  const canJoinSKP=!owner&&!me&&!!s.skpRecruit&&s.status==="recruiting";
+  const joinButtons=(canJoinPL||canJoinSKP)?`
+    ${canJoinPL?`<button class="primary-action" onclick="openScheduleApply('${s.id}',false)">PLとして参加希望</button>`:""}
+    ${canJoinSKP?`<button class="primary-action" onclick="joinAsSkp('${s.id}')">SKPとして参加希望</button>`:""}
+  `:"";
+
   return `<section class="card schedule-card">
     <div class="schedule-card-head">
       <div>
         <h3>${scenarioEscape(s.title)}</h3>
-        <div class="schedule-meta">${scenarioEscape(s.system)}　｜　定員 ${scheduleRangeText(s)}　｜　残り募集人数 ${scheduleRemaining(s)}人</div>
+        <div class="schedule-meta">${scenarioEscape(s.system)}　｜　PL定員 ${scheduleRangeText(s)}　｜　PL残り募集人数 ${scheduleRemaining(s)}人${s.skpRecruit?"　｜　SKP募集中":""}</div>
+        ${s.finalDate?`<div class="schedule-meta">開催日時：${scenarioEscape(s.finalDate)}</div>`:""}
       </div>
       <div class="schedule-meta">${owner?"作成者：あなた":"KP："+scenarioEscape(s.ownerName)}</div>
     </div>
@@ -881,12 +920,13 @@ function renderScheduleCard(s,mode="home"){
     <div class="schedule-participants">
       ${rows||'<div class="empty">現在、参加者はいません。</div>'}
     </div>
-    <div class="schedule-meta" style="margin-top:12px">その他${s.participants?.length?`：${s.participants.length}人`:""}</div>
+    <div class="schedule-meta" style="margin-top:12px">参加者${s.participants?.length?`：${s.participants.length}人`:""}</div>
     <div class="schedule-actions">
       ${s.cocofolia?`<a class="schedule-link" href="${scenarioEscape(s.cocofolia)}" target="_blank" rel="noopener">ココフォリア</a>`:""}
-      ${canJoin?`<button class="primary-action" onclick="openScheduleApply('${s.id}',false)">シナリオに参加する</button>`:""}
-      ${owner?`<button onclick="editScenarioSchedule('${s.id}')">内容変更</button>`:""}
-      ${owner?`<button onclick="finalizeScenarioDate('${s.id}')">日程確定</button>`:""}
+      ${joinButtons}
+      ${owner&&s.status==="recruiting"?`<button onclick="editScenarioSchedule('${s.id}')">内容変更</button>`:""}
+      ${owner&&s.status==="recruiting"?`<button onclick="finalizeScenarioDate('${s.id}')">日程確定</button>`:""}
+      ${owner&&s.status==="scheduled"?`<button class="primary-action" onclick="markScenarioPlayed('${s.id}')">プレイ済みにする</button>`:""}
     </div>
   </section>`;
 }
@@ -933,14 +973,14 @@ async function saveScenarioParticipant(){
   try{
     if(existing){
       const {error}=await supabaseClient.from("scenario_participants").update({
-        user_name:currentUserName(),character_name:characterName,character_sheet_url:iacharaUrl||null,other:other||null
+        user_name:currentUserName(),character_name:characterName,character_sheet_url:iacharaUrl||null,other:other||null,role:"pl"
       }).eq("scenario_id",s.id).eq("user_id",currentUserId());
       if(error)throw error;
     }else{
       if(scheduleRemaining(s)<=0){alert("募集人数に空きがありません。");return}
       const {error}=await supabaseClient.from("scenario_participants").insert({
         scenario_id:s.id,user_id:currentUserId(),user_name:currentUserName(),
-        character_name:characterName,character_sheet_url:iacharaUrl||null,other:other||null,is_confirmed:false
+        character_name:characterName,character_sheet_url:iacharaUrl||null,other:other||null,role:"pl",is_confirmed:false
       });
       if(error)throw error;
     }
@@ -948,21 +988,72 @@ async function saveScenarioParticipant(){
     alert(existing?"参加内容を変更しました。":"シナリオへの参加希望を登録しました。");
     await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
   }catch(e){
-    console.error("scenario_participants save error:", e);
-
-    const detail = [
-      e?.code ? `code: ${e.code}` : "",
-      e?.message ? `message: ${e.message}` : "",
-      e?.details ? `details: ${e.details}` : "",
-      e?.hint ? `hint: ${e.hint}` : ""
-    ].filter(Boolean).join("\\n");
-
-    alert(
-      "参加情報の保存に失敗しました。\\n\\n" +
-      (detail || "Supabaseから詳細なエラー情報を取得できませんでした。")
-    );
+    console.error(e);
+    alert("参加情報の保存に失敗しました。Supabaseの権限設定を確認してください。");
   }
 }
+async function joinAsSkp(id){
+  const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
+  if(!currentUserId()){alert("Discordでログインしてください。");return}
+  if(!s.skpRecruit||s.status!=="recruiting"){alert("このシナリオではSKPを募集していません。");return}
+  if(participantOf(s)){alert("すでにこのシナリオへの参加希望が登録されています。");return}
+  try{
+    const {error}=await supabaseClient.from("scenario_participants").insert({
+      scenario_id:s.id,user_id:currentUserId(),user_name:currentUserName(),
+      character_name:null,character_sheet_url:null,other:null,role:"skp",is_confirmed:false
+    });
+    if(error)throw error;
+    await refreshScenarioData();
+    alert("SKPとして参加希望を登録しました。");
+    await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
+  }catch(e){
+    console.error(e);
+    alert("SKP参加希望の保存に失敗しました。Supabaseの権限設定を確認してください。");
+  }
+}
+async function cancelOwnSkp(id){
+  const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
+  const p=participantOf(s);
+  if(!p||(p.role||"pl")!=="skp")return;
+  if(!confirm("SKPとしての参加希望を取り消しますか？"))return;
+  try{
+    const {error}=await supabaseClient.from("scenario_participants").delete().eq("scenario_id",id).eq("user_id",currentUserId());
+    if(error)throw error;
+    await refreshScenarioData();
+    await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
+  }catch(e){
+    console.error(e);
+    alert("SKP参加希望の取り消しに失敗しました。");
+  }
+}
+async function markScenarioPlayed(id){
+  const s=scenarioSchedules.find(x=>x.id===id);if(!s||!isScenarioOwner(s)||s.status!=="scheduled")return;
+  if(!confirm(`「${s.title}」をプレイ済みにしますか？\n作成者と参加者（PL・SKP）のプレイ済みシナリオに記録されます。`))return;
+  try{
+    const {error}=await supabaseClient.from("scenarios").update({status:"completed"}).eq("id",id).eq("owner_id",currentUserId());
+    if(error)throw error;
+    await refreshScenarioData();
+    alert("プレイ済みシナリオに登録しました。");
+    renderScheduleManage();
+    renderSchedulePlayed();
+  }catch(e){
+    console.error(e);
+    alert("プレイ済みへの変更に失敗しました。Supabaseの権限設定を確認してください。");
+  }
+}
+function renderSchedulePlayed(){
+  const box=document.getElementById("schedulePlayedList");
+  if(!box)return;
+  const list=scenarioSchedules.filter(s=>s.status==="completed"&&(isScenarioOwner(s)||isScenarioParticipant(s)));
+  box.innerHTML=list.length?list.map(s=>renderScheduleCard(s,"played")).join(""):'<div class="empty">プレイ済みのシナリオはありません。</div>';
+}
+async function schedulePlayedPage(btn){
+  activateNav(btn,"プレイ済みシナリオ");
+  showOnlySchedule("schedulePlayedPage");
+  await refreshScenarioData();
+  renderSchedulePlayed();
+}
+
 async function cancelScenarioParticipant(id,userId){
   const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
   if(!isScenarioOwner(s)){alert("参加の取り消しは予定作成者のみ行えます。");return}
@@ -994,7 +1085,8 @@ function editScenarioSchedule(id){
   document.getElementById("scheduleCapacityExact").value=s.capacityExact||"";
   document.getElementById("scheduleDescription").value=s.description||"";
   document.getElementById("scheduleCocofolia").value=s.cocofolia||"";
-  const confirmed=s.participants.filter(p=>p.isConfirmed);
+  document.getElementById("scheduleSkpRecruit").value=s.skpRecruit?"yes":"no";
+  const confirmed=s.participants.filter(p=>p.isConfirmed&&(!p.role||p.role==="pl"));
   document.getElementById("scheduleConfirmedCount").value=confirmed.length||"";
   toggleOtherSystem();toggleCapacityFields();renderConfirmedInputs();
   setTimeout(()=>confirmed.forEach((p,i)=>{
