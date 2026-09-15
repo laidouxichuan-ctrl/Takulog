@@ -585,21 +585,18 @@ function placeholder(btn){
 
 /* ===== シナリオ予定管理 ===== */
 const SCENARIO_KEY="takulog_scenario_schedules_v1";
-let scenarioSchedules=scenarioLoad();
+let scenarioSchedules=[];
 let scenarioEditingId=null;
 let scenarioApplyId=null;
+let scenarioReady=false;
 
-function scenarioLoad(){
-  try{
-    const v=JSON.parse(localStorage.getItem(SCENARIO_KEY)||"[]");
-    return Array.isArray(v)?v:[];
-  }catch(e){return []}
-}
-function scenarioSave(){localStorage.setItem(SCENARIO_KEY,JSON.stringify(scenarioSchedules))}
 function currentDiscordUser(){
   try{return JSON.parse(sessionStorage.getItem("discord_user")||"null")}catch(e){return null}
 }
-function currentUserId(){return currentDiscordUser()?.id||""}
+function currentUserId(){
+  const u=currentDiscordUser();
+  return u?.id||"";
+}
 function currentUserName(){
   const u=currentDiscordUser();
   return u ? (u.global_name||u.username||"Discordユーザー") : "未ログイン";
@@ -614,11 +611,80 @@ function scheduleCapacity(s){
 }
 function scheduleMax(s){return s.capacityMode==="range"?Number(s.capacityMax):Number(s.capacityExact)}
 function scheduleMin(s){return s.capacityMode==="range"?Number(s.capacityMin):Number(s.capacityExact)}
-function scheduleRemaining(s){return Math.max(0,scheduleMax(s)-s.participants.length)}
+function scheduleRemaining(s){return Math.max(0,scheduleMax(s)-(s.participants||[]).length)}
 function scheduleRangeText(s){return s.capacityMode==="range"?`${scheduleMin(s)}～${scheduleMax(s)}`:String(scheduleMax(s))}
 function isScenarioOwner(s){return s.ownerId===currentUserId()}
-function isScenarioParticipant(s){return s.participants.some(p=>p.userId===currentUserId())}
-function participantOf(s){return s.participants.find(p=>p.userId===currentUserId())}
+function isScenarioParticipant(s){return (s.participants||[]).some(p=>p.userId===currentUserId())}
+function participantOf(s){return (s.participants||[]).find(p=>p.userId===currentUserId())}
+
+function dbScenarioToLocal(row,participants){
+  return {
+    id:row.id,
+    ownerId:row.owner_id,
+    ownerName:row.owner_name,
+    title:row.title,
+    system:row.system,
+    capacityMode:row.capacity_mode,
+    capacityMin:row.capacity_min,
+    capacityMax:row.capacity_max,
+    capacityExact:row.capacity_exact,
+    description:row.description||"",
+    cocofolia:row.cocofolia_url||"",
+    createdAt:row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+    status:row.status||"recruiting",
+    finalDate:row.final_date||"",
+    participants:(participants||[]).map(p=>({
+      userId:p.user_id,
+      userName:p.user_name,
+      characterName:p.character_name||"",
+      iacharaUrl:p.character_sheet_url||"",
+      other:p.other||"",
+      isConfirmed:!!p.is_confirmed
+    }))
+  };
+}
+
+async function loadScenarioData(){
+  const {data:rows,error}=await supabaseClient
+    .from("scenarios")
+    .select("*")
+    .order("created_at",{ascending:false});
+  if(error)throw error;
+
+  if(!rows?.length){scenarioSchedules=[];return}
+  const ids=rows.map(r=>r.id);
+  const {data:parts,error:partError}=await supabaseClient
+    .from("scenario_participants")
+    .select("*")
+    .in("scenario_id",ids)
+    .order("created_at",{ascending:true});
+  if(partError)throw partError;
+
+  const byScenario=new Map();
+  (parts||[]).forEach(p=>{
+    if(!byScenario.has(p.scenario_id))byScenario.set(p.scenario_id,[]);
+    byScenario.get(p.scenario_id).push(p);
+  });
+  scenarioSchedules=rows.map(r=>dbScenarioToLocal(r,byScenario.get(r.id)||[]));
+}
+
+async function refreshScenarioData(){
+  try{
+    await loadScenarioData();
+    scenarioReady=true;
+    renderAllScenarioData();
+    if(document.getElementById("scheduleManagePage").style.display==="block")renderScheduleManage();
+    if(document.getElementById("scheduleJoinedPage").style.display==="block")renderJoinedSchedules();
+  }catch(e){
+    console.error(e);
+    scenarioReady=false;
+    alert("シナリオデータの読み込みに失敗しました。Supabaseのテーブルと権限設定を確認してください。");
+  }
+}
+
+async function scenarioSave(){
+  await refreshScenarioData();
+}
 
 function showOnlySchedule(id){
   const ids=["scheduleCreatePage","scheduleManagePage","scheduleApplyPage","scheduleJoinedPage","chatPaletteOutputPage","palettePage","daycodePage"];
@@ -632,24 +698,27 @@ function activateNav(btn,title){
   if(btn)btn.classList.add("active");
   document.getElementById("pageTitle").textContent=title;
 }
-function scenarioSchedulePage(btn){
+async function scenarioSchedulePage(btn){
   activateNav(btn,"シナリオ予定作成");
   showOnlySchedule("scheduleCreatePage");
   scenarioEditingId=null;
   resetScheduleForm();
+  if(!scenarioReady)await refreshScenarioData();
+  renderConfirmedInputs();
 }
-function scheduleManagePage(btn){
+async function scheduleManagePage(btn){
   activateNav(btn,"予定作成済みシナリオ");
   showOnlySchedule("scheduleManagePage");
+  await refreshScenarioData();
   renderScheduleManage();
 }
-function scheduleJoinedPage(btn){
+async function scheduleJoinedPage(btn){
   activateNav(btn,"参加希望済みシナリオ");
   showOnlySchedule("scheduleJoinedPage");
+  await refreshScenarioData();
   renderJoinedSchedules();
 }
 function resetScheduleForm(){
-  const u=currentDiscordUser();
   document.getElementById("scheduleFormTitle").textContent="シナリオ予定作成";
   document.getElementById("scheduleKP").value=currentUserName();
   document.getElementById("scheduleTitle").value="";
@@ -665,7 +734,6 @@ function resetScheduleForm(){
   document.getElementById("scheduleConfirmedCount").value="";
   document.getElementById("confirmedInputs").innerHTML="";
   toggleCapacityFields();
-  renderConfirmedInputs();
 }
 function toggleOtherSystem(){
   document.getElementById("scheduleOtherSystem").style.display=document.getElementById("scheduleSystem").value==="その他"?"block":"none";
@@ -676,13 +744,10 @@ function toggleCapacityFields(){
   document.getElementById("scheduleCapacityExact").style.display=range?"none":"block";
 }
 function discordKnownUsers(){
-  // Prototype: previously registered users are collected from local scenario data.
-  // The current login account is always excluded from confirmed-participant choices.
   const map=new Map();
   scenarioSchedules.forEach(s=>{
-    const owner={id:s.ownerId,name:s.ownerName};
-    if(owner.id)map.set(owner.id,owner);
-    s.participants.forEach(p=>{if(p.userId)map.set(p.userId,{id:p.userId,name:p.userName})});
+    if(s.ownerId)map.set(s.ownerId,{id:s.ownerId,name:s.ownerName});
+    (s.participants||[]).forEach(p=>{if(p.userId)map.set(p.userId,{id:p.userId,name:p.userName})});
   });
   return [...map.values()].filter(u=>u.id!==currentUserId());
 }
@@ -707,7 +772,7 @@ function renderConfirmedInputs(){
       <input class="confirmed-url" type="url" placeholder="確定参加者のいあきゃらURL（任意）" value="${scenarioEscape(data.url)}" style="margin-top:8px">
     `;
     box.appendChild(item);
-    if(data.user) item.querySelector(".confirmed-user").value=data.user;
+    if(data.user)item.querySelector(".confirmed-user").value=data.user;
   }
 }
 function collectConfirmed(){
@@ -715,16 +780,11 @@ function collectConfirmed(){
     const select=x.querySelector(".confirmed-user");
     const userId=select.value;
     const userName=select.options[select.selectedIndex]?.textContent||"";
-    return {
-      userId,userName,
-      characterName:x.querySelector(".confirmed-char").value.trim(),
-      iacharaUrl:x.querySelector(".confirmed-url").value.trim(),
-      other:"",
-      isConfirmed:true
-    };
+    return {userId,userName,characterName:x.querySelector(".confirmed-char").value.trim(),iacharaUrl:x.querySelector(".confirmed-url").value.trim(),other:"",isConfirmed:true};
   }).filter(p=>p.userId);
 }
-function saveScenarioSchedule(){
+
+async function saveScenarioSchedule(){
   if(!currentUserId()){alert("予定を作成するにはDiscordでログインしてください。");return}
   const title=document.getElementById("scheduleTitle").value.trim();
   const system=scenarioSystemValue();
@@ -739,33 +799,63 @@ function saveScenarioSchedule(){
   const confirmed=collectConfirmed();
   const capacity=mode==="range"?max:exact;
   if(confirmed.length>capacity){alert("確定参加者の人数が定員を超えています。");return}
-  const s={
-    id:scenarioEditingId||("scenario-"+Date.now()+"-"+Math.random().toString(36).slice(2)),
-    ownerId:currentUserId(),
-    ownerName:currentUserName(),
-    title,system,
-    capacityMode:mode,
-    capacityMin:mode==="range"?min:null,
-    capacityMax:mode==="range"?max:null,
-    capacityExact:mode==="exact"?exact:null,
+
+  const payload={
+    owner_id:currentUserId(),
+    owner_name:currentUserName(),
+    title,
+    system,
+    capacity_mode:mode,
+    capacity_min:mode==="range"?min:null,
+    capacity_max:mode==="range"?max:null,
+    capacity_exact:mode==="exact"?exact:null,
     description:document.getElementById("scheduleDescription").value.trim(),
-    cocofolia,
-    createdAt:Date.now(),
+    cocofolia_url:cocofolia,
     status:"recruiting",
-    participants:confirmed
+    final_date:null
   };
-  if(scenarioEditingId){
-    const idx=scenarioSchedules.findIndex(x=>x.id===scenarioEditingId);
-    if(idx>=0)scenarioSchedules[idx]=s;
-  }else scenarioSchedules.push(s);
-  scenarioSave();
-  alert("シナリオ予定を作成しました。");
-  home(document.querySelector('[data-page="ホーム"]'));
+
+  try{
+    let scenarioId=scenarioEditingId;
+    if(scenarioEditingId){
+      const {error}=await supabaseClient.from("scenarios").update(payload).eq("id",scenarioEditingId);
+      if(error)throw error;
+      const {error:deleteError}=await supabaseClient.from("scenario_participants").delete().eq("scenario_id",scenarioEditingId);
+      if(deleteError)throw deleteError;
+    }else{
+      const {data,error}=await supabaseClient.from("scenarios").insert(payload).select("id").single();
+      if(error)throw error;
+      scenarioId=data.id;
+    }
+
+    if(confirmed.length){
+      const rows=confirmed.map(p=>({
+        scenario_id:scenarioId,
+        user_id:p.userId,
+        user_name:p.userName,
+        character_name:p.characterName||null,
+        character_sheet_url:p.iacharaUrl||null,
+        other:p.other||null,
+        is_confirmed:true
+      }));
+      const {error}=await supabaseClient.from("scenario_participants").insert(rows);
+      if(error)throw error;
+    }
+
+    scenarioEditingId=null;
+    await refreshScenarioData();
+    alert("シナリオ予定を作成しました。");
+    home(document.querySelector('[data-page="ホーム"]'));
+  }catch(e){
+    console.error(e);
+    alert("シナリオ予定の保存に失敗しました。Supabaseの権限設定を確認してください。");
+  }
 }
+
 function renderScheduleCard(s,mode="home"){
   const owner=isScenarioOwner(s);
   const me=participantOf(s);
-  const rows=s.participants.map(p=>{
+  const rows=(s.participants||[]).map(p=>{
     const own=p.userId===currentUserId();
     return `<div class="participant-row">
       <span class="participant-name">${scenarioEscape(p.userName)}</span>
@@ -788,7 +878,7 @@ function renderScheduleCard(s,mode="home"){
     <div class="schedule-participants">
       ${rows||'<div class="empty">現在、参加者はいません。</div>'}
     </div>
-    <div class="schedule-meta" style="margin-top:12px">その他${s.participants.length?`：${s.participants.length}人`:""}</div>
+    <div class="schedule-meta" style="margin-top:12px">その他${s.participants?.length?`：${s.participants.length}人`:""}</div>
     <div class="schedule-actions">
       ${s.cocofolia?`<a class="schedule-link" href="${scenarioEscape(s.cocofolia)}" target="_blank" rel="noopener">ココフォリア</a>`:""}
       ${canJoin?`<button class="primary-action" onclick="openScheduleApply('${s.id}',false)">シナリオに参加する</button>`:""}
@@ -829,32 +919,52 @@ function cancelScheduleApply(){
   scenarioApplyId=null;
   scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
 }
-function saveScenarioParticipant(){
+async function saveScenarioParticipant(){
   const s=scenarioSchedules.find(x=>x.id===scenarioApplyId);if(!s)return;
   if(!currentUserId()){alert("Discordでログインしてください。");return}
   const characterName=document.getElementById("scheduleApplyCharacter").value.trim();
   const iacharaUrl=document.getElementById("scheduleApplyIachara").value.trim();
   const other=document.getElementById("scheduleApplyOther").value.trim();
   if(!characterName){alert("キャラクター名を入力してください。");return}
-  const existing=s.participants.find(p=>p.userId===currentUserId());
-  if(existing){
-    existing.characterName=characterName;existing.iacharaUrl=iacharaUrl;existing.other=other;
-  }else{
-    if(scheduleRemaining(s)<=0){alert("募集人数に空きがありません。");return}
-    s.participants.push({userId:currentUserId(),userName:currentUserName(),characterName,iacharaUrl,other,isConfirmed:false});
+  const existing=participantOf(s);
+  try{
+    if(existing){
+      const {error}=await supabaseClient.from("scenario_participants").update({
+        user_name:currentUserName(),character_name:characterName,character_sheet_url:iacharaUrl||null,other:other||null
+      }).eq("scenario_id",s.id).eq("user_id",currentUserId());
+      if(error)throw error;
+    }else{
+      if(scheduleRemaining(s)<=0){alert("募集人数に空きがありません。");return}
+      const {error}=await supabaseClient.from("scenario_participants").insert({
+        scenario_id:s.id,user_id:currentUserId(),user_name:currentUserName(),
+        character_name:characterName,character_sheet_url:iacharaUrl||null,other:other||null,is_confirmed:false
+      });
+      if(error)throw error;
+    }
+    await refreshScenarioData();
+    alert(existing?"参加内容を変更しました。":"シナリオへの参加希望を登録しました。");
+    await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
+  }catch(e){
+    console.error(e);
+    alert("参加情報の保存に失敗しました。Supabaseの権限設定を確認してください。");
   }
-  scenarioSave();
-  alert(existing?"参加内容を変更しました。":"シナリオへの参加希望を登録しました。");
-  scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
 }
-function cancelScenarioParticipant(id,userId){
+async function cancelScenarioParticipant(id,userId){
   const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
   if(!isScenarioOwner(s)){alert("参加の取り消しは予定作成者のみ行えます。");return}
   const p=s.participants.find(x=>x.userId===userId);if(!p)return;
   if(!confirm(`${p.userName}さんの参加を取り消しますか？`))return;
-  s.participants=s.participants.filter(x=>x.userId!==userId);
-  s.status="recruiting";
-  scenarioSave();renderScheduleManage();renderHomeRecruit();
+  try{
+    const {error}=await supabaseClient.from("scenario_participants").delete().eq("scenario_id",id).eq("user_id",userId);
+    if(error)throw error;
+    const {error:scenarioError}=await supabaseClient.from("scenarios").update({status:"recruiting"}).eq("id",id);
+    if(scenarioError)throw scenarioError;
+    await refreshScenarioData();
+    renderScheduleManage();renderHomeRecruit();
+  }catch(e){
+    console.error(e);
+    alert("参加者の取り消しに失敗しました。Supabaseの権限設定を確認してください。");
+  }
 }
 function editScenarioSchedule(id){
   const s=scenarioSchedules.find(x=>x.id===id);if(!s||!isScenarioOwner(s))return;
@@ -882,15 +992,21 @@ function editScenarioSchedule(id){
   activateNav(document.querySelector('[data-page="予定作成済みシナリオ"]'),"シナリオ予定の内容変更");
   showOnlySchedule("scheduleCreatePage");
 }
-function finalizeScenarioDate(id){
+async function finalizeScenarioDate(id){
   const s=scenarioSchedules.find(x=>x.id===id);if(!s||!isScenarioOwner(s))return;
   const value=prompt("確定した開催日時を入力してください。例：2026/10/10 20:00");
   if(value===null)return;
-  s.finalDate=value.trim();
-  s.status="scheduled";
-  scenarioSave();
-  alert(s.finalDate?"日程を確定しました。":"日程確定を取り消しました。");
-  renderScheduleManage();renderHomeRecruit();
+  try{
+    const finalDate=value.trim();
+    const {error}=await supabaseClient.from("scenarios").update({final_date:finalDate||null,status:"scheduled"}).eq("id",id);
+    if(error)throw error;
+    await refreshScenarioData();
+    alert(finalDate?"日程を確定しました。":"日程確定を取り消しました。");
+    renderScheduleManage();renderHomeRecruit();
+  }catch(e){
+    console.error(e);
+    alert("日程の保存に失敗しました。Supabaseの権限設定を確認してください。");
+  }
 }
 function cancelScheduleForm(){
   scenarioEditingId=null;
@@ -1146,10 +1262,10 @@ function buildCalendar(){
  }
 }
 buildCalendar();
-document.addEventListener("DOMContentLoaded",()=>{
-  restoreDiscordSession();
-  handleDiscordCallback();
-  renderAllScenarioData();
+document.addEventListener("DOMContentLoaded",async()=>{
+  await restoreDiscordSession();
+  await handleDiscordCallback();
+  await refreshScenarioData();
 });
 
 /* ===== Embedded Daycode ===== */
