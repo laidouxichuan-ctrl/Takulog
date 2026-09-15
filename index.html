@@ -948,8 +948,19 @@ async function saveScenarioParticipant(){
     alert(existing?"参加内容を変更しました。":"シナリオへの参加希望を登録しました。");
     await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
   }catch(e){
-    console.error(e);
-    alert("参加情報の保存に失敗しました。Supabaseの権限設定を確認してください。");
+    console.error("scenario_participants save error:", e);
+
+    const detail = [
+      e?.code ? `code: ${e.code}` : "",
+      e?.message ? `message: ${e.message}` : "",
+      e?.details ? `details: ${e.details}` : "",
+      e?.hint ? `hint: ${e.hint}` : ""
+    ].filter(Boolean).join("\\n");
+
+    alert(
+      "参加情報の保存に失敗しました。\\n\\n" +
+      (detail || "Supabaseから詳細なエラー情報を取得できませんでした。")
+    );
   }
 }
 async function cancelScenarioParticipant(id,userId){
