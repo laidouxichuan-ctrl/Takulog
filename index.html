@@ -1742,65 +1742,464 @@ document.addEventListener("DOMContentLoaded",async()=>{
   await refreshScenarioData();
 });
 
-/* ===== Embedded Daycode ===== */
-const KEY="takulog_internal_daycode_v1";
+/* ===== Embedded Daycode : Supabase ===== */
 const WD=["日","月","火","水","木","金","土"];
-let data=dcLoad(), editing=null, draft={};
+let data={
+  scenarioId:"shared-daycode",
+  members:[],
+  dates:[],
+  answers:{}
+};
+let editing=null;
+let draft={};
+let daycodeReady=false;
+
 function dcCurrentUser(){
   const u=currentDiscordUser();
   return u ? (u.global_name||u.username||"Discordユーザー") : "";
 }
+
+function dcCurrentUserId(){
+  return currentUserId();
+}
+
 function dcFresh(){
- const now=new Date(), y=now.getFullYear(), m=now.getMonth(), last=new Date(y,m+1,0).getDate();
- const dates=[]; for(let d=1;d<=last;d++)dates.push(dcFmt(new Date(y,m,d)));
- return {scenarioId:"prototype-scenario",members:[],dates,answers:{}};
+  const now=new Date();
+  const y=now.getFullYear();
+  const m=now.getMonth();
+  const last=new Date(y,m+1,0).getDate();
+  const dates=[];
+  for(let d=1;d<=last;d++){
+    dates.push(dcFmt(new Date(y,m,d)));
+  }
+  return {
+    scenarioId:"shared-daycode",
+    members:[],
+    dates,
+    answers:{}
+  };
 }
-function dcLoad(){
- try{
-   const saved=JSON.parse(localStorage.getItem(KEY));
-   const v=saved||dcFresh();
-   // 旧バージョンのテスト参加者A～Cを完全に除去
-   const testUsers=new Set(["参加者A","参加者B","参加者C"]);
-   v.members=(v.members||[]).filter(m=>!testUsers.has(m));
-   testUsers.forEach(m=>{if(v.answers)delete v.answers[m]});
-   return v;
- }catch(e){return dcFresh()}
+
+function dcStatus(t){
+  const e=document.getElementById("dcStatus");
+  if(!e)return;
+  e.textContent=t;
+  setTimeout(()=>{
+    if(e.textContent===t)e.textContent="";
+  },1300);
 }
-function dcSave(){localStorage.setItem(KEY,JSON.stringify(data));dcStatus("保存しました")}
-function dcStatus(t){const e=document.getElementById("dcStatus");if(!e)return;e.textContent=t;setTimeout(()=>e.textContent="",1300)}
-function dcFmt(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
-function dcDateText(s){const d=new Date(s+"T00:00:00");return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${WD[d.getDay()]}）`}
-function dcEnsure(u,d){data.answers[u]??={};data.answers[u][d]??="";return data.answers[u][d]}
-function dcEsc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+function dcFmt(d){
+  return d.getFullYear()+"-"+
+    String(d.getMonth()+1).padStart(2,"0")+"-"+
+    String(d.getDate()).padStart(2,"0");
+}
+
+function dcDateText(s){
+  const d=new Date(s+"T00:00:00");
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${WD[d.getDay()]}）`;
+}
+
+function dcEsc(s){
+  return String(s).replace(/[&<>"']/g,c=>({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[c]));
+}
+
+/* ===== 日付をDBへ追加 ===== */
+async function dcEnsureMonth(year,month){
+  const last=new Date(year,month+1,0).getDate();
+  const rows=[];
+
+  for(let d=1;d<=last;d++){
+    rows.push({
+      date:dcFmt(new Date(year,month,d))
+    });
+  }
+
+  const {error}=await supabaseClient
+    .from("daycode_dates")
+    .upsert(rows,{onConflict:"date"});
+
+  if(error)throw error;
+}
+
+async function dcEnsureDates(){
+  const now=new Date();
+
+  /* 現在月は常に利用可能にする */
+  await dcEnsureMonth(now.getFullYear(),now.getMonth());
+
+  /*
+    毎月25日以降にログインした場合も、
+    翌月分がまだ追加されていなければ追加する。
+    25日に誰もアクセスしなかった場合の取りこぼしも防ぐ。
+  */
+  if(now.getDate()>=25){
+    const next=new Date(now.getFullYear(),now.getMonth()+1,1);
+    await dcEnsureMonth(next.getFullYear(),next.getMonth());
+  }
+}
+
+/* ===== Supabaseから読み込む ===== */
+async function dcLoadFromSupabase(){
+  try{
+    if(!dcCurrentUserId()){
+      data=dcFresh();
+      daycodeReady=false;
+      dcRender();
+      return;
+    }
+
+    await dcEnsureDates();
+
+    const [
+      {data:memberRows,error:memberError},
+      {data:dateRows,error:dateError},
+      {data:answerRows,error:answerError}
+    ]=await Promise.all([
+      supabaseClient
+        .from("daycode_members")
+        .select("user_id,display_name")
+        .order("updated_at",{ascending:true}),
+
+      supabaseClient
+        .from("daycode_dates")
+        .select("date")
+        .order("date",{ascending:true}),
+
+      supabaseClient
+        .from("daycode_answers")
+        .select("user_id,date,answer")
+        .order("date",{ascending:true})
+    ]);
+
+    if(memberError)throw memberError;
+    if(dateError)throw dateError;
+    if(answerError)throw answerError;
+
+    data.members=(memberRows||[]).map(row=>({
+      id:row.user_id,
+      name:row.display_name
+    }));
+
+    data.dates=(dateRows||[]).map(row=>row.date);
+
+    data.answers={};
+    (answerRows||[]).forEach(row=>{
+      if(!data.answers[row.user_id]){
+        data.answers[row.user_id]={};
+      }
+      data.answers[row.user_id][row.date]=row.answer;
+    });
+
+    await dcEnsureCurrentUser();
+
+    daycodeReady=true;
+    dcRender();
+
+  }catch(e){
+    console.error("Daycode load error:",e);
+    daycodeReady=false;
+    alert("デイコードの読み込みに失敗しました。Supabaseのテーブルと権限設定を確認してください。");
+  }
+}
+
+/* ===== ログインユーザーを参加者として登録 ===== */
+async function dcEnsureCurrentUser(){
+  const id=dcCurrentUserId();
+  const name=dcCurrentUser();
+
+  if(!id)return;
+
+  const {error}=await supabaseClient
+    .from("daycode_members")
+    .upsert({
+      user_id:id,
+      display_name:name,
+      updated_at:new Date().toISOString()
+    },{onConflict:"user_id"});
+
+  if(error)throw error;
+
+  const existing=data.members.find(m=>m.id===id);
+
+  if(existing){
+    existing.name=name;
+  }else{
+    data.members.push({
+      id:id,
+      name:name
+    });
+  }
+}
+
+/* ===== 表示 ===== */
 function dcRender(){
- const name=dcCurrentUser(),userEl=document.getElementById("dc-user");
- if(userEl)userEl.textContent=name||"未ログイン";
- if(name&&!data.members.includes(name))data.members.push(name);
- let h="<thead><tr><th class='date'>日程</th>";
- data.members.forEach(m=>h+=`<th><span class="member" onclick='dcChoose(${JSON.stringify(m)})'>${dcEsc(m)}</span></th>`);
- h+="</tr></thead><tbody>";
- data.dates.forEach(d=>{h+=`<tr><td class="date">${dcDateText(d)}</td>`;data.members.forEach(m=>{const a=dcEnsure(m,d);const c=a==="○"?"ok":a==="△"?"maybe":a==="×"?"no":"none";h+=`<td class="answer ${c}">${a||"－"}</td>`});h+="</tr>"});
- document.getElementById("dc-table").innerHTML=h+"</tbody>";
- dcSaveSilently();
+  const name=dcCurrentUser();
+  const userEl=document.getElementById("dc-user");
+
+  if(userEl){
+    userEl.textContent=name||"未ログイン";
+  }
+
+  let h="<thead><tr><th class='date'>日程</th>";
+
+  data.members.forEach(m=>{
+    h+=`<th>
+      <span class="member"
+        onclick='dcChoose(${JSON.stringify(m.id)})'>
+        ${dcEsc(m.name)}
+      </span>
+    </th>`;
+  });
+
+  h+="</tr></thead><tbody>";
+
+  data.dates.forEach(d=>{
+    h+=`<tr><td class="date">${dcDateText(d)}</td>`;
+
+    data.members.forEach(m=>{
+      const a=(data.answers[m.id]&&data.answers[m.id][d])||"";
+
+      const c=
+        a==="○" ? "ok" :
+        a==="△" ? "maybe" :
+        a==="×" ? "no" :
+        "none";
+
+      h+=`<td class="answer ${c}">${a||"－"}</td>`;
+    });
+
+    h+="</tr>";
+  });
+
+  const table=document.getElementById("dc-table");
+  if(table){
+    table.innerHTML=h+"</tbody>";
+  }
 }
-function dcSaveSilently(){localStorage.setItem(KEY,JSON.stringify(data))}
-function dcChoose(m){if(m===dcCurrentUser())dcOpenEditor()}
-function dcOpenEditor(){
- editing=dcCurrentUser();if(!editing){alert("Discordでログインしてください。");return}
- if(!data.members.includes(editing))data.members.push(editing);
- draft=JSON.parse(JSON.stringify(data.answers[editing]||{}));
- document.getElementById("dc-editorTitle").textContent=editing+" さんの日程登録";
- dcRenderBulk();dcRenderDays();document.getElementById("dc-editor").classList.add("active");document.getElementById("dc-editor").scrollIntoView({behavior:"smooth"});
+
+/* ===== 自分の日程編集 ===== */
+function dcChoose(userId){
+  if(userId!==dcCurrentUserId()){
+    return;
+  }
+  dcOpenEditor();
 }
-function dcRenderBulk(){const b=document.getElementById("dc-bulk");b.innerHTML="";WD.forEach((w,i)=>{b.innerHTML+=`<div class="bulkbox">${w}曜日<select onchange="dcBulkSet(${i},this.value)"><option value="">変更しない</option><option>○</option><option>△</option><option>×</option></select></div>`})}
-function dcBulkSet(i,v){if(!v)return;data.dates.forEach(d=>{if(new Date(d+"T00:00:00").getDay()===i)draft[d]=v});dcRenderDays()}
-function dcRenderDays(){const box=document.getElementById("dc-days");box.innerHTML="";data.dates.forEach(d=>{const a=draft[d]||"";box.innerHTML+=`<div class="day"><div>${dcDateText(d)}</div><div class="choices">${["○","△","×"].map(v=>`<button class="choice ${a===v?"selected":""}" onclick='dcSetAnswer(${JSON.stringify(d)},${JSON.stringify(v)})'>${v}</button>`).join("")}</div></div>`})}
-function dcSetAnswer(d,v){draft[d]=v;dcRenderDays()}
-function dcSaveEditor(){if(!editing)return;data.answers[editing]={...draft};dcSave();dcRender();dcCloseEditor()}
-function dcCloseEditor(){document.getElementById("dc-editor").classList.remove("active");editing=null;draft={}}
-function dcAddNextMonth(){const last=data.dates.length?new Date(data.dates[data.dates.length-1]+"T00:00:00"):new Date();const y=last.getFullYear(),m=last.getMonth()+1,end=new Date(y,m+1,0).getDate();for(let d=1;d<=end;d++){const s=dcFmt(new Date(y,m,d));if(!data.dates.includes(s))data.dates.push(s)}data.dates.sort();dcSave();dcRender()}
-function dcResetData(){if(confirm("デイコードの入力データを初期化しますか？")){data=dcFresh();dcSave();dcRender();dcCloseEditor()}}
-dcRender();
+
+async function dcOpenEditor(){
+  const id=dcCurrentUserId();
+
+  if(!id){
+    alert("Discordでログインしてください。");
+    return;
+  }
+
+  if(!daycodeReady){
+    await dcLoadFromSupabase();
+  }
+
+  editing=id;
+
+  draft={
+    ...(data.answers[id]||{})
+  };
+
+  document.getElementById("dc-editorTitle").textContent=
+    dcCurrentUser()+" さんの日程登録";
+
+  dcRenderBulk();
+  dcRenderDays();
+
+  document.getElementById("dc-editor").classList.add("active");
+  document.getElementById("dc-editor").scrollIntoView({
+    behavior:"smooth"
+  });
+}
+
+/* ===== 曜日一括入力 ===== */
+function dcRenderBulk(){
+  const b=document.getElementById("dc-bulk");
+  if(!b)return;
+
+  b.innerHTML="";
+
+  WD.forEach((w,i)=>{
+    b.innerHTML+=`
+      <div class="bulkbox">
+        ${w}曜日
+        <select onchange="dcBulkSet(${i},this.value)">
+          <option value="">変更しない</option>
+          <option>○</option>
+          <option>△</option>
+          <option>×</option>
+        </select>
+      </div>
+    `;
+  });
+}
+
+function dcBulkSet(i,v){
+  if(!v)return;
+
+  data.dates.forEach(d=>{
+    if(new Date(d+"T00:00:00").getDay()===i){
+      draft[d]=v;
+    }
+  });
+
+  dcRenderDays();
+}
+
+/* ===== 個別入力 ===== */
+function dcRenderDays(){
+  const box=document.getElementById("dc-days");
+  if(!box)return;
+
+  box.innerHTML="";
+
+  data.dates.forEach(d=>{
+    const a=draft[d]||"";
+
+    box.innerHTML+=`
+      <div class="day">
+        <div>${dcDateText(d)}</div>
+
+        <div class="choices">
+          ${["○","△","×"].map(v=>`
+            <button
+              class="choice ${a===v?"selected":""}"
+              onclick='dcSetAnswer(${JSON.stringify(d)},${JSON.stringify(v)})'>
+              ${v}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  });
+}
+
+function dcSetAnswer(d,v){
+  draft[d]=v;
+  dcRenderDays();
+}
+
+/* ===== Supabaseへ保存 ===== */
+async function dcSaveEditor(){
+  if(!editing)return;
+
+  try{
+    const id=editing;
+
+    const rows=Object.entries(draft)
+      .filter(([date,answer])=>["○","△","×"].includes(answer))
+      .map(([date,answer])=>({
+        user_id:id,
+        date:date,
+        answer:answer,
+        updated_at:new Date().toISOString()
+      }));
+
+    /*
+      ○△×を入れた日だけupsertする。
+      未入力へ戻す処理は別途deleteで行う。
+    */
+    if(rows.length){
+      const {error}=await supabaseClient
+        .from("daycode_answers")
+        .upsert(rows,{onConflict:"user_id,date"});
+
+      if(error)throw error;
+    }
+
+    /*
+      draftに存在しない日付や空欄になった日付を削除。
+      現在保存されている自分の回答との差分を取る。
+    */
+    const saved=data.answers[id]||{};
+    const deleteDates=Object.keys(saved)
+      .filter(date=>!["○","△","×"].includes(draft[date]||""));
+
+    if(deleteDates.length){
+      const {error}=await supabaseClient
+        .from("daycode_answers")
+        .delete()
+        .eq("user_id",id)
+        .in("date",deleteDates);
+
+      if(error)throw error;
+    }
+
+    await dcLoadFromSupabase();
+
+    dcStatus("保存しました");
+    dcCloseEditor();
+
+  }catch(e){
+    console.error("Daycode save error:",e);
+    alert("デイコードの保存に失敗しました。Supabaseの権限設定を確認してください。");
+  }
+}
+
+function dcCloseEditor(){
+  const editor=document.getElementById("dc-editor");
+
+  if(editor){
+    editor.classList.remove("active");
+  }
+
+  editing=null;
+  draft={};
+}
+
+/* ===== 翌月分追加 ===== */
+async function dcAddNextMonth(){
+  try{
+    if(!dcCurrentUserId()){
+      alert("Discordでログインしてください。");
+      return;
+    }
+
+    const last=data.dates.length
+      ? new Date(data.dates[data.dates.length-1]+"T00:00:00")
+      : new Date();
+
+    const y=last.getFullYear();
+    const m=last.getMonth()+1;
+
+    await dcEnsureMonth(y,m);
+    await dcLoadFromSupabase();
+
+    dcStatus("翌月分を追加しました");
+
+  }catch(e){
+    console.error("Daycode month add error:",e);
+    alert("翌月分の追加に失敗しました。");
+  }
+}
+
+/* ===== 初期化 ===== */
+async function dcInit(){
+  await dcLoadFromSupabase();
+}
+
+dcInit();
+
+/*
+  Supabaseのログイン状態が変わった場合も
+  デイコードを再読み込み。
+*/
+supabaseClient.auth.onAuthStateChange(()=>{
+  setTimeout(()=>{
+    dcLoadFromSupabase();
+  },0);
+});
+
 </script>
 </body>
 </html>
