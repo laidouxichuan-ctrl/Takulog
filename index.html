@@ -111,31 +111,39 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 
 /* ===== Daycode integration ===== */
 .daycode-page{padding:18px;margin-bottom:22px}
-.daycode-page .daycode-inner{width:100%}
-.daycode-page .daycode-title{margin:0 0 6px}
-.daycode-page .daycode-note{margin:0 0 14px}
-.daycode-page header{display:none}
-.daycode-page .panel{box-shadow:none}
-
-.daycode-page *{box-sizing:border-box}.daycode-page{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;background:#f5f6f8;color:#222}
-.daycode-page header{background:#fff;border-bottom:1px solid #ddd;padding:16px 20px;position:sticky;top:0;z-index:10}
-.daycode-page h1,.daycode-page h2{margin:0 0 8px}.daycode-page .sub,.daycode-page .note{font-size:13px;color:#666;line-height:1.6}
-.daycode-page main{max-width:1200px;margin:18px auto;padding:0 14px 40px}
-.daycode-page .panel{background:#fff;border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:14px}
-.daycode-page .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.daycode-page .toolbar select,.daycode-page .toolbar button,.daycode-page button,.daycode-page select{font:inherit}
-.daycode-page button,.daycode-page select{border:1px solid #bbb;border-radius:6px;background:#fff;padding:7px 11px}.daycode-page button{cursor:pointer}
-.daycode-page .primary{background:#222;color:#fff;border-color:#222}.daycode-page .danger{color:#a00}
-.daycode-page .status{color:#18743a;font-size:13px;margin-left:auto}
-.daycode-page .table-wrap{overflow:auto;background:#fff;border:1px solid #ddd}
-.daycode-page table{border-collapse:collapse;min-width:720px;width:100%}.daycode-page th,.daycode-page td{border:1px solid #ddd;padding:8px;text-align:center;white-space:nowrap}
-.daycode-page th{background:#f0f1f3;position:sticky;top:73px;z-index:2}.daycode-page .date{position:sticky;left:0;background:#fff;text-align:left;z-index:1}
-.daycode-page th.date{background:#f0f1f3;z-index:3}.daycode-page .member{text-decoration:underline;cursor:pointer}.daycode-page .answer{font-weight:700}.daycode-page .none{color:#999}.daycode-page .ok{color:#1762c7}.daycode-page .maybe{color:#d79b00}.daycode-page .no{color:#d33a3a}
-.daycode-page .editor{display:none}.daycode-page .editor.active{display:block}.daycode-page .bulk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:12px 0}
-.daycode-page .bulkbox{border:1px solid #ddd;border-radius:6px;padding:6px;text-align:center;background:#fafafa}.daycode-page .bulkbox select{width:100%;margin-top:5px}
-.daycode-page .day{display:grid;grid-template-columns:1fr 180px;gap:10px;padding:7px 0;border-bottom:1px solid #eee;align-items:center}
-.daycode-page .choices{display:flex;gap:6px;justify-content:flex-end}.daycode-page .choice{min-width:50px;background:#fff}.daycode-page .choice:nth-child(1){color:#1762c7}.daycode-page .choice:nth-child(2){color:#d79b00}.daycode-page .choice:nth-child(3){color:#d33a3a}.daycode-page .choice.selected{font-weight:800;box-shadow:0 0 0 2px currentColor inset}
-.daycode-page .actions{display:flex;gap:8px;margin-top:14px}.daycode-page .editor-top-actions{margin-top:0;margin-bottom:14px}
-@media(max-width:700px){.bulk{grid-template-columns:repeat(2,1fr)}.day{grid-template-columns:1fr}.choices{justify-content:flex-start}.status{width:100%;margin-left:0}}
+.daycode-page *{box-sizing:border-box}
+.daycode-page{font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+.daycode-page .dc-calendar-panel{background:#fff;border:1px solid #e1e7ef;border-radius:18px;padding:18px;box-shadow:0 3px 12px #2878e812}
+.daycode-page .dc-calendar-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.daycode-page .dc-login-user{font-size:15px;color:#596675}
+.daycode-page .dc-login-user strong{color:var(--text);font-size:18px}
+.daycode-page .dc-calendar-period{margin-top:5px;color:#7a8695;font-size:13px}
+.daycode-page .dc-register-button{width:auto;min-width:140px;min-height:48px;padding:10px 22px}
+.daycode-page .dc-calendar-nav{display:flex;justify-content:flex-end;gap:8px;margin:16px 0 10px}
+.daycode-page .dc-calendar-nav button,.daycode-page .dc-back-button{border:1px solid #dce3eb;border-radius:9px;background:#f7f9fc;color:#596675;font:inherit;font-weight:700;padding:10px 18px;cursor:pointer}
+.daycode-page .dc-calendar-nav button:hover,.daycode-page .dc-back-button:hover{background:#eef3f8}
+.daycode-page .dc-calendar-nav button:disabled{opacity:.4;cursor:not-allowed}
+.daycode-page .dc-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid #dfe5ec;border-left:1px solid #dfe5ec;border-radius:10px;overflow:hidden}
+.daycode-page .dc-weekday{padding:9px 4px;text-align:center;background:#f3f6fa;color:#596675;font-size:12px;font-weight:800;border-right:1px solid #dfe5ec;border-bottom:1px solid #dfe5ec}
+.daycode-page .dc-date{min-height:82px;padding:8px;background:#fff;border-right:1px solid #dfe5ec;border-bottom:1px solid #dfe5ec;text-align:left;cursor:pointer;position:relative;font:inherit;color:var(--text)}
+.daycode-page .dc-date:hover:not(:disabled){background:#f4f9ff}
+.daycode-page .dc-date:disabled{background:#f1f3f6;color:#b8bec7;cursor:not-allowed}
+.daycode-page .dc-date .num{font-size:14px;font-weight:800}
+.daycode-page .dc-date.today{box-shadow:inset 0 0 0 2px #3187ed}
+.daycode-page .dc-date.selected{background:#eaf4ff}
+.daycode-page .dc-date .time{display:block;margin-top:8px;font-size:12px;color:#1762c7;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.daycode-page .status{display:block;min-height:20px;margin-top:8px;color:#18743a;font-size:13px}
+.daycode-page .dc-time-editor{display:none;background:#fff;border:1px solid #e1e7ef;border-radius:18px;padding:20px;margin-top:16px;box-shadow:0 3px 12px #2878e812}
+.daycode-page .dc-time-editor.active{display:block}
+.daycode-page .dc-time-editor h2{margin:0 0 7px}
+.daycode-page .dc-editor-note{color:#697484;font-size:13px;margin-bottom:18px}
+.daycode-page .dc-selected-date{padding:14px 16px;border:1px solid #dce3eb;border-radius:10px;background:#f7f9fc;font-weight:800;margin-bottom:16px}
+.daycode-page .dc-time-row{display:flex;align-items:end;gap:8px}
+.daycode-page .dc-time-row label{display:grid;gap:6px;color:#596675;font-size:12px;font-weight:700}
+.daycode-page .dc-time-row select{min-width:105px;height:45px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;padding:8px 12px;color:var(--text);font:inherit}
+.daycode-page .actions{display:flex;gap:10px;margin-top:18px}
+.daycode-page .actions .primary{width:auto;min-width:130px}
+@media(max-width:700px){.daycode-page{padding:10px}.daycode-page .dc-calendar-panel,.daycode-page .dc-time-editor{padding:14px;border-radius:14px}.daycode-page .dc-register-button{width:100%}.daycode-page .dc-date{min-height:72px;padding:6px 4px}.daycode-page .dc-date .time{font-size:10px}.daycode-page .dc-calendar-period{font-size:12px}}
 
 /* ===== シナリオ予定機能 ===== */
 .schedule-page{display:none;padding:18px;margin-bottom:22px}
@@ -449,26 +457,40 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </section>
 
 <section class="card daycode-page" id="daycodePage" style="display:none">
-  <section class="panel toolbar">
-<label>入力ユーザー：<span id="dc-user" class="dc-user-name">未ログイン</span></label>
-<button onclick="dcOpenEditor()">自分の日程を入力</button>
-<button onclick="dcAddNextMonth()">翌月分を追加</button>
-<span id="dc-dcStatus" class="status"></span>
-</section>
+  <div class="dc-calendar-panel" id="dc-calendar-panel">
+    <div class="dc-calendar-head">
+      <div>
+        <div class="dc-login-user">入力ユーザー：<strong id="dc-user">未ログイン</strong></div>
+        <div class="dc-calendar-period" id="dc-period"></div>
+      </div>
+      <button class="primary dc-register-button" onclick="dcOpenCalendar()">日程確定</button>
+    </div>
+    <div class="dc-calendar-nav" id="dc-calendar-nav" style="display:none">
+      <button id="dc-prev" onclick="dcPrevPage()">前へ</button>
+      <button id="dc-next" onclick="dcNextPage()">次へ</button>
+    </div>
+    <div id="dc-calendar" class="dc-calendar" style="display:none"></div>
+    <span id="dc-dcStatus" class="status"></span>
+  </div>
 
-<div class="table-wrap"><table id="dc-table"></table></div>
-
-<section id="dc-editor" class="panel editor">
-<h2 id="dc-editorTitle"></h2>
-<div class="actions editor-top-actions"><button class="primary" onclick="dcSaveEditor()">日程登録</button><button onclick="dcCloseEditor()">キャンセル</button></div>
-<div class="panel" style="background:#fafafa">
-<b>曜日一括入力</b>
-<div class="note">選択した曜日のすべての日付へ一括反映します。反映後、個別に変更できます。</div>
-<div id="dc-bulk" class="bulk"></div>
-</div>
-<div id="dc-days"></div>
-<div class="actions"><button class="primary" onclick="dcSaveEditor()">日程登録</button><button onclick="dcCloseEditor()">キャンセル</button></div>
-</section>
+  <section id="dc-editor" class="dc-time-editor">
+    <h2 id="dc-editorTitle">日程を選択</h2>
+    <div class="dc-editor-note">日付を選択して、予定する時間を設定してください。</div>
+    <div id="dc-selected-date" class="dc-selected-date"></div>
+    <div class="dc-time-row">
+      <label>時
+        <select id="dc-hour"></select>
+      </label>
+      <span>：</span>
+      <label>分
+        <select id="dc-minute"></select>
+      </label>
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="dcConfirmTime()">確定</button>
+      <button class="dc-back-button" onclick="dcCloseEditor()">戻る</button>
+    </div>
+  </section>
 </section>
 
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
@@ -1625,104 +1647,125 @@ document.addEventListener("DOMContentLoaded",async()=>{
 });
 
 /* ===== Embedded Daycode ===== */
-const KEY="takulog_internal_daycode_v1";
+const KEY="takulog_internal_daycode_v2";
 const WD=["日","月","火","水","木","金","土"];
-let data=dcLoad(), editing=null, draft={};
+let data=dcLoad(), editing=null, draft=null, selectedDate=null;
+let dcPageStart=dcWeekStart(new Date());
 
-function dcFresh(){
- const now=new Date(), y=now.getFullYear(), m=now.getMonth(), last=new Date(y,m+1,0).getDate();
- const dates=[]; for(let d=1;d<=last;d++)dates.push(dcFmt(new Date(y,m,d)));
- return {scenarioId:"prototype-scenario",members:["参加者A","参加者B","参加者C"],dates,answers:{}};
-}
-function dcLoad(){try{return JSON.parse(localStorage.getItem(KEY))||dcFresh()}catch(e){return dcFresh()}}
-function dcSave(){localStorage.setItem(KEY,JSON.stringify(data));dcStatus("保存しました")}
-function dcStatus(t){const e=document.getElementById("dc-dcStatus");e.textContent=t;setTimeout(()=>e.textContent="",1300)}
 function dcFmt(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
-function dcDateText(s){const d=new Date(s+"T00:00:00");return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${WD[d.getDay()]}）`}
-function dcEnsure(u,d){data.answers[u]??={};data.answers[u][d]??="";return data.answers[u][d]}
-function dcEsc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-
-function dcCurrentUser(){
- const u=currentDiscordUser();
- return u ? (u.username || u.global_name || "Discordユーザー") : "";
+function dcParse(s){return new Date(s+"T00:00:00")}
+function dcWeekStart(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-x.getDay());x.setHours(0,0,0,0);return x}
+function dcToday(){const n=new Date();n.setHours(0,0,0,0);return n}
+function dcDateText(s){const d=dcParse(s);return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${WD[d.getDay()]}）`}
+function dcEsc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function dcCurrentUser(){const u=currentDiscordUser();return u?(u.username||u.global_name||"Discordユーザー"):""}
+function dcLoad(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(KEY)||"null");
+    if(saved&&saved.answers)return saved;
+  }catch(e){}
+  return {user:"",answers:{}};
 }
-function dcEnsureCurrentUser(){
- const name=dcCurrentUser();
- if(!name)return "";
- if(!data.members.includes(name)){
-   data.members.push(name);
-   data.answers[name]??={};
- }
- return name;
-}
+function dcSave(){localStorage.setItem(KEY,JSON.stringify(data));dcStatus("日程を登録しました") }
+function dcStatus(t){const e=document.getElementById("dc-dcStatus");if(!e)return;e.textContent=t;clearTimeout(dcStatus.timer);dcStatus.timer=setTimeout(()=>e.textContent="",1600)}
+function dcUserData(){const name=dcCurrentUser();if(!name)return null;data.user=name;data.answers[name]??={};return data.answers[name]}
 function dcRender(){
- const userEl=document.getElementById("dc-user");
- const current=dcEnsureCurrentUser();
- if(userEl) userEl.textContent=current||"未ログイン";
- let h="<thead><tr><th class='date'>日程</th>";
- data.members.forEach(m=>h+=`<th><span class="member">${dcEsc(m)}</span></th>`);
- h+="</tr></thead><tbody>";
- data.dates.forEach(d=>{
-  h+=`<tr><td class="date">${dcDateText(d)}</td>`;
-  data.members.forEach(m=>{const a=dcEnsure(m,d);const c=a==="○"?"ok":a==="△"?"maybe":a==="×"?"no":"none";h+=`<td class="answer ${c}">${a||"－"}</td>`});
-  h+="</tr>";
- });
- const table=document.getElementById("dc-table");
- if(table)table.innerHTML=h+"</tbody>";
+  const user=dcCurrentUser();
+  const userEl=document.getElementById("dc-user");
+  if(userEl)userEl.textContent=user||"未ログイン";
+  const start=dcPageStart;
+  const end=new Date(start);end.setDate(end.getDate()+27);
+  const period=document.getElementById("dc-period");
+  if(period)period.textContent=`${start.getFullYear()}/${start.getMonth()+1}/${start.getDate()} ～ ${end.getFullYear()}/${end.getMonth()+1}/${end.getDate()}`;
+  const cal=document.getElementById("dc-calendar");if(!cal)return;
+  let h=WD.map(w=>`<div class="dc-weekday">${w}</div>`).join("");
+  const answers=dcUserData()||{};
+  for(let i=0;i<28;i++){
+    const d=new Date(start);d.setDate(start.getDate()+i);
+    const s=dcFmt(d), past=d<dcToday(), today=s===dcFmt(dcToday()), times=answers[s]||[];
+    const label=times.length?times.map(x=>dcEsc(x)).join(", "):"";
+    const timeHtml=label ? '<span class="time">'+label+'</span>' : '';
+    h+="<button type=\"button\" class=\"dc-date "+(today?"today ":"")+(times.length?"selected":"")+"\" "+(past?"disabled":"")+" onclick='dcSelectDate("+JSON.stringify(s)+")'><span class=\"num\">"+d.getDate()+"</span>"+timeHtml+"</button>";
+  }
+  cal.innerHTML=h;
+  const base=dcWeekStart(dcToday());
+  const prev=document.getElementById("dc-prev");if(prev)prev.style.display=start.getTime()>base.getTime()?"block":"none";
+  const next=document.getElementById("dc-next");if(next)next.style.display="block";
 }
-function dcChoose(m){
- // 入力者は常にDiscordログイン中のユーザーに固定
- if(m===dcCurrentUser()) dcOpenEditor();
+function dcOpenCalendar(){
+  if(!dcCurrentUser()){alert("Discordでログインしてください。");return;}
+  dcUserData();
+  dcPageStart=dcWeekStart(dcToday());
+  const nav=document.getElementById("dc-calendar-nav"),cal=document.getElementById("dc-calendar");
+  if(nav)nav.style.display="flex";
+  if(cal)cal.style.display="grid";
+  dcRender();
+  document.getElementById("dc-calendar-panel").scrollIntoView({behavior:"smooth",block:"start"});
 }
 function dcOpenEditor(){
- editing=dcEnsureCurrentUser();
- if(!editing){alert("Discordでログインしてください。");return;}
- draft=JSON.parse(JSON.stringify(data.answers[editing]||{}));
- document.getElementById("dc-editorTitle").textContent=editing+" さんの日程登録";
- dcRenderBulk();dcRenderDays();document.getElementById("dc-editor").classList.add("active");
- document.getElementById("dc-editor").scrollIntoView({behavior:"smooth"});
+  if(!dcCurrentUser()){alert("Discordでログインしてください。");return;}
+  const answers=dcUserData()||{};
+  draft=JSON.parse(JSON.stringify(answers));
+  selectedDate=null;
+  document.getElementById("dc-editorTitle").textContent=dcCurrentUser()+" さんの日程確定";
+  dcFillTimeSelects();
+  document.getElementById("dc-selected-date").textContent="日付を選択してください";
+  document.getElementById("dc-editor").classList.add("active");
+  document.getElementById("dc-editor").scrollIntoView({behavior:"smooth",block:"start"});
 }
-function dcRenderBulk(){
- const b=document.getElementById("dc-bulk");b.innerHTML="";
- WD.forEach((w,i)=>{b.innerHTML+=`<div class="bulkbox">${w}曜日<select onchange="dcBulkSet(${i},this.value)"><option value="">変更しない</option><option>○</option><option>△</option><option>×</option></select></div>`})
+function dcFillTimeSelects(){
+  const hour=document.getElementById("dc-hour"),minute=document.getElementById("dc-minute");
+  hour.innerHTML=Array.from({length:25},(_,i)=>`<option value="${i}">${i}時</option>`).join("");
+  minute.innerHTML=Array.from({length:12},(_,i)=>{const v=i*5;return `<option value="${v}">${String(v).padStart(2,"0")}分</option>`}).join("");
 }
-function dcBulkSet(i,v){
- if(!v)return;
- data.dates.forEach(d=>{if(new Date(d+"T00:00:00").getDay()===i)draft[d]=v});
- dcRenderDays();
+function dcSelectDate(s){
+  if(dcParse(s)<dcToday())return;
+  selectedDate=s;
+  if(!draft)draft=JSON.parse(JSON.stringify(dcUserData()||{}));
+  document.getElementById("dc-selected-date").textContent=dcDateText(s);
+  const times=(draft&&draft[s])||[];
+  const first=times[0]||"20:00";
+  const [h,m]=first.split(":").map(Number);
+  document.getElementById("dc-hour").value=Number.isFinite(h)?String(h):"20";
+  document.getElementById("dc-minute").value=Number.isFinite(m)?String(m):"0";
+  document.getElementById("dc-editor").classList.add("active");
+  document.getElementById("dc-editor").scrollIntoView({behavior:"smooth",block:"start"});
 }
-function dcRenderDays(){
- const box=document.getElementById("dc-days");box.innerHTML="";
- data.dates.forEach(d=>{
-  const a=draft[d]||"";
-  box.innerHTML+=`<div class="day"><div>${dcDateText(d)}</div><div class="choices">${["○","△","×"].map(v=>`<button class="choice ${a===v?"selected":""}" onclick='dcSetAnswer(${JSON.stringify(d)},${JSON.stringify(v)})'>${v}</button>`).join("")}</div></div>`
- })
+function dcConfirmTime(){
+  if(!selectedDate){alert("日付を選択してください。");return;}
+  const h=Number(document.getElementById("dc-hour").value),m=Number(document.getElementById("dc-minute").value);
+  draft[selectedDate]=[`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`];
+  data.answers[dcCurrentUser()]={...draft};
+  data.user=dcCurrentUser();
+  dcSave();
+  dcCloseEditor();
+  dcRender();
 }
-function dcSetAnswer(d,v){draft[d]=v;dcRenderDays()}
-function dcSaveEditor(){
- if(!editing)return;
- data.answers[editing]={...draft};
- dcSave();dcRender();dcCloseEditor()
+function dcCloseEditor(){
+  document.getElementById("dc-editor").classList.remove("active");
+  editing=null;selectedDate=null;draft=null;
+  document.getElementById("dc-calendar-panel").scrollIntoView({behavior:"smooth",block:"start"});
+  dcRender();
 }
-function dcCloseEditor(){document.getElementById("dc-editor").classList.remove("active");editing=null;draft={}}
-function dcAddMember(){
- const n=prompt("参加者名を入力してください");if(!n||data.members.includes(n))return;
- data.members.push(n);data.answers[n]={};dcSave();dcRender()
+function dcPrevPage(){const base=dcWeekStart(dcToday());const next=new Date(dcPageStart);next.setDate(next.getDate()-28);if(next>=base)dcPageStart=next;else dcPageStart=base;dcRender()}
+function dcNextPage(){const next=new Date(dcPageStart);next.setDate(next.getDate()+28);dcPageStart=next;dcRender()}
+
+// 旧バージョンのテスト参加者データを読み込んだ場合も画面には表示しない。
+function dcMigrateOldData(){
+  try{
+    const old=JSON.parse(localStorage.getItem("takulog_internal_daycode_v1")||"null");
+    if(!old)return;
+    const user=dcCurrentUser();
+    if(user&&old.answers){
+      const oldAns=old.answers[user]||{};
+      data.answers[user]??={};
+      Object.keys(oldAns).forEach(k=>{if(!data.answers[user][k]&&["○","△","×"].includes(oldAns[k]))data.answers[user][k]=[]});
+    }
+  }catch(e){}
 }
-function dcAddNextMonth(){
- const last=data.dates.length?new Date(data.dates[data.dates.length-1]+"T00:00:00"):new Date();
- const y=last.getFullYear(),m=last.getMonth()+1,end=new Date(y,m+1,0).getDate();
- for(let d=1;d<=end;d++){const s=dcFmt(new Date(y,m,d));if(!data.dates.includes(s))data.dates.push(s)}
- data.dates.sort();dcSave();dcRender()
-}
-function dcAutoAddOn25(){
- const t=new Date();if(t.getDate()!==25)return;
- const y=t.getFullYear(),m=t.getMonth()+1,end=new Date(y,m+1,0).getDate();let changed=false;
- for(let d=1;d<=end;d++){const s=dcFmt(new Date(y,m,d));if(!data.dates.includes(s)){data.dates.push(s);changed=true}}
- if(changed){data.dates.sort();dcSave()}
-}
-function dcResetData(){if(confirm("試作データを初期化しますか？")){data=dcFresh();dcSave();dcRender();dcCloseEditor()}}
-dcAutoAddOn25();dcRender();
+
+dcMigrateOldData();
+dcRender();
 </script>
 </body>
 </html>
