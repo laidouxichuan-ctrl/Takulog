@@ -450,9 +450,9 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 
 <section class="card daycode-page" id="daycodePage" style="display:none">
   <section class="panel toolbar">
-<label>入力ユーザー：<select id="dc-user"></select></label>
-<button onclick="openEditor()">自分の日程を入力</button>
-<button onclick="addNextMonth()">翌月分を追加</button>
+<label>入力ユーザー：<span id="dc-user" class="dc-user-name">未ログイン</span></label>
+<button onclick="dcOpenEditor()">自分の日程を入力</button>
+<button onclick="dcAddNextMonth()">翌月分を追加</button>
 <span id="dc-dcStatus" class="status"></span>
 </section>
 
@@ -460,14 +460,14 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 
 <section id="dc-editor" class="panel editor">
 <h2 id="dc-editorTitle"></h2>
-<div class="actions editor-top-actions"><button class="primary" onclick="saveEditor()">日程登録</button><button onclick="closeEditor()">キャンセル</button></div>
+<div class="actions editor-top-actions"><button class="primary" onclick="dcSaveEditor()">日程登録</button><button onclick="dcCloseEditor()">キャンセル</button></div>
 <div class="panel" style="background:#fafafa">
 <b>曜日一括入力</b>
 <div class="note">選択した曜日のすべての日付へ一括反映します。反映後、個別に変更できます。</div>
 <div id="dc-bulk" class="bulk"></div>
 </div>
 <div id="dc-days"></div>
-<div class="actions"><button class="primary" onclick="saveEditor()">日程登録</button><button onclick="closeEditor()">キャンセル</button></div>
+<div class="actions"><button class="primary" onclick="dcSaveEditor()">日程登録</button><button onclick="dcCloseEditor()">キャンセル</button></div>
 </section>
 </section>
 
@@ -1389,28 +1389,18 @@ function backdrop(e){if(e.target.id==="modal")closeLegal()}
 
 
 function daycodePage(btn){
-  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  document.getElementById("pageTitle").textContent="デイコード";
-  document.getElementById("chatPaletteOutputPage").style.display="none";
-  document.getElementById("palettePage").style.display="none";
-  document.getElementById("daycodePage").style.display="block";
-  document.getElementById("homeRecruit").style.display="none";
-  document.querySelector(".create").style.display="none";
-  document.querySelector(".calendar-card").style.display="none";
+  activateNav(btn,"デイコード");
+  // 前に開いていたページをすべて閉じ、デイコードだけを表示する
+  showOnlySchedule("daycodePage");
   if(typeof dcRender==="function") dcRender();
 }
 
 function chatPalette(btn){
-  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  document.getElementById("pageTitle").textContent="チャットパレット生成";
-  document.getElementById("chatPaletteOutputPage").style.display="block";
+  activateNav(btn,"チャットパレット生成");
+  // いあきゃら管理など、直前に開いていたページが上に残らないようにする
+  document.querySelectorAll("#chatPaletteOutputPage, #palettePage").forEach(e=>e.style.display="none");
+  showOnlySchedule("chatPaletteOutputPage");
   document.getElementById("palettePage").style.display="block";
-  document.getElementById("daycodePage").style.display="none";
-  document.getElementById("homeRecruit").style.display="none";
-  document.querySelector(".create").style.display="none";
-  document.querySelector(".calendar-card").style.display="none";
 }
 
 function generatePalette(){
@@ -1652,22 +1642,41 @@ function dcDateText(s){const d=new Date(s+"T00:00:00");return `${d.getFullYear()
 function dcEnsure(u,d){data.answers[u]??={};data.answers[u][d]??="";return data.answers[u][d]}
 function dcEsc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
+function dcCurrentUser(){
+ const u=currentDiscordUser();
+ return u ? (u.username || u.global_name || "Discordユーザー") : "";
+}
+function dcEnsureCurrentUser(){
+ const name=dcCurrentUser();
+ if(!name)return "";
+ if(!data.members.includes(name)){
+   data.members.push(name);
+   data.answers[name]??={};
+ }
+ return name;
+}
 function dcRender(){
- const sel=document.getElementById("dc-user");sel.innerHTML="";
- data.members.forEach(m=>{const o=document.createElement("option");o.value=m;o.textContent=m;sel.appendChild(o)});
+ const userEl=document.getElementById("dc-user");
+ const current=dcEnsureCurrentUser();
+ if(userEl) userEl.textContent=current||"未ログイン";
  let h="<thead><tr><th class='date'>日程</th>";
- data.members.forEach(m=>h+=`<th><span class="member" onclick='dcChoose(${JSON.stringify(m)})'>${dcEsc(m)}</span></th>`);
+ data.members.forEach(m=>h+=`<th><span class="member">${dcEsc(m)}</span></th>`);
  h+="</tr></thead><tbody>";
  data.dates.forEach(d=>{
   h+=`<tr><td class="date">${dcDateText(d)}</td>`;
   data.members.forEach(m=>{const a=dcEnsure(m,d);const c=a==="○"?"ok":a==="△"?"maybe":a==="×"?"no":"none";h+=`<td class="answer ${c}">${a||"－"}</td>`});
   h+="</tr>";
  });
- document.getElementById("dc-table").innerHTML=h+"</tbody>";
+ const table=document.getElementById("dc-table");
+ if(table)table.innerHTML=h+"</tbody>";
 }
-function dcChoose(m){document.getElementById("dc-user").value=m;dcOpenEditor()}
+function dcChoose(m){
+ // 入力者は常にDiscordログイン中のユーザーに固定
+ if(m===dcCurrentUser()) dcOpenEditor();
+}
 function dcOpenEditor(){
- editing=document.getElementById("dc-user").value;if(!editing)return;
+ editing=dcEnsureCurrentUser();
+ if(!editing){alert("Discordでログインしてください。");return;}
  draft=JSON.parse(JSON.stringify(data.answers[editing]||{}));
  document.getElementById("dc-editorTitle").textContent=editing+" さんの日程登録";
  dcRenderBulk();dcRenderDays();document.getElementById("dc-editor").classList.add("active");
@@ -1690,7 +1699,11 @@ function dcRenderDays(){
  })
 }
 function dcSetAnswer(d,v){draft[d]=v;dcRenderDays()}
-function dcSaveEditor(){data.answers[editing]={...draft};dcSave();dcRender();dcCloseEditor()}
+function dcSaveEditor(){
+ if(!editing)return;
+ data.answers[editing]={...draft};
+ dcSave();dcRender();dcCloseEditor()
+}
 function dcCloseEditor(){document.getElementById("dc-editor").classList.remove("active");editing=null;draft={}}
 function dcAddMember(){
  const n=prompt("参加者名を入力してください");if(!n||data.members.includes(n))return;
