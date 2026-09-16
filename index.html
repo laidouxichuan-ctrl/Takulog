@@ -45,6 +45,28 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .num{font-weight:700}
 .day.today .num{display:inline-grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#3187ed;color:#fff}
 .day.sun .num{color:#df6b76}.day.sat .num{color:#4d87ce}.day.today .num{color:#fff}
+.home-scenario-mark{display:block;margin-top:5px;padding:3px 5px;background:#eef6ff;color:#1762c7;border:1px solid #cfe4fb;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.home-scenario-mark:hover{background:#e2f0ff}
+.date-judge-calendar{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--line);border-top:1px solid var(--line)}
+.date-judge-weekday,.date-judge-cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.date-judge-weekday{padding:8px;background:#f8fafc;text-align:center;font-size:12px;font-weight:700;color:#697484}
+.date-judge-cell{min-height:78px;padding:7px;background:#fff;position:relative;cursor:pointer;text-align:left}
+.date-judge-cell.past{background:#fbfcfd;color:#c6ccd4;cursor:default}
+.date-judge-cell.today{box-shadow:inset 0 0 0 2px #3187ed}
+.date-judge-cell.judge-ok3{background:#dff4df}
+.date-judge-cell.judge-ok{background:#e4f0ff}
+.date-judge-cell.judge-maybe{background:#fff4cf}
+.date-judge-cell.judge-no{background:#ffe1e1}
+.date-judge-cell.judge-none{background:#eceff2;color:#697484}
+.date-judge-cell.selected{box-shadow:inset 0 0 0 3px #1762c7}
+.date-judge-number{font-weight:800;font-size:14px}
+.date-judge-status{display:block;margin-top:8px;font-size:18px;font-weight:800;text-align:center}
+.date-judge-help{margin-top:10px;font-size:12px;color:var(--muted)}
+.date-judge-legend{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px;font-size:12px}
+.date-judge-legend span{display:inline-flex;align-items:center;gap:5px}
+.date-judge-dot{width:13px;height:13px;border:1px solid #ccd3dc;display:inline-block}
+.date-judge-dot.ok3{background:#dff4df}.date-judge-dot.ok{background:#e4f0ff}.date-judge-dot.maybe{background:#fff4cf}.date-judge-dot.no{background:#ffe1e1}.date-judge-dot.none{background:#eceff2}
+
 .recruit{padding:18px}
 .empty{font-size:14px;color:var(--muted)}
 .footer{text-align:center;padding:18px 0 4px;color:#89929d;font-size:11px}
@@ -372,15 +394,20 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
   <h2 class="section-title" id="dateFinalizeTitle">日程確定</h2>
   <div id="dateCalendarView">
     <div class="date-picker-head">
-      <button class="secondary-button" id="datePrevButton" onclick="dateFinalizeMove(-1)" style="display:none">‹ 前の4週間</button>
       <div class="date-picker-range" id="datePickerRange"></div>
       <button class="primary-action date-nav-button" onclick="dateFinalizeMove(1)">次の4週間 ›</button>
     </div>
-    <div class="date-picker-weekdays"><div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div></div>
-    <div class="date-picker-grid" id="datePickerGrid"></div>
-    <p class="schedule-help">当日より前の日付は選択できません。</p>
+    <div class="date-judge-legend">
+      <span><i class="date-judge-dot ok3"></i>◎ 緑</span>
+      <span><i class="date-judge-dot ok"></i>○ 青</span>
+      <span><i class="date-judge-dot maybe"></i>△ 黄</span>
+      <span><i class="date-judge-dot no"></i>× 赤</span>
+      <span><i class="date-judge-dot none"></i>未取得者あり グレー</span>
+    </div>
+    <div class="date-judge-calendar" id="datePickerGrid"></div>
+    <p class="date-judge-help" id="dateFinalizeHelp">日程判定を読み込んでいます。</p>
   </div>
-  <div id="dateTimeView" style="display:none">
+  <div id="dateTimeView style="display:none">
     <div class="selected-date-label" id="selectedDateLabel"></div>
     <div class="date-time-selects">
       <label>時<select id="finalHour" onchange="dateFinalizeHourChanged()"></select></label>
@@ -528,6 +555,15 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </main>
 </div>
 
+
+<div class="modal-backdrop" id="homeScenarioModal" onclick="homeScenarioBackdrop(event)">
+  <div class="modal">
+    <div class="modal-head"><h2 id="homeScenarioModalTitle"></h2><button class="close" onclick="closeHomeScenarioModal()">×</button></div>
+    <div class="modal-body" id="homeScenarioModalBody"></div>
+    <div class="modal-foot"><button onclick="closeHomeScenarioModal()">閉じる</button></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modal" onclick="backdrop(event)">
 <div class="modal">
 <div class="modal-head"><h2 id="modalTitle"></h2><button class="close" onclick="closeLegal()">×</button></div>
@@ -673,6 +709,7 @@ function home(btn){
   document.querySelector(".create").style.display="block";
   document.querySelector(".calendar-card").style.display="block";
   renderHomeRecruit();
+  buildCalendar();
 }
 function placeholder(btn){
   if(!btn)return;
@@ -1413,43 +1450,105 @@ function editScenarioSchedule(id){
 let dateFinalizeScenarioId=null;
 let dateFinalizePageIndex=0;
 let dateFinalizeSelectedDate="";
+let dateFinalizeJudgements={};
+let dateFinalizeTargetUsers=[];
 
 function dateOnlyToday(){
   const d=new Date();d.setHours(0,0,0,0);return d;
 }
 function datePageStart(index){
   const today=dateOnlyToday();
-  const start=new Date(today);start.setDate(today.getDate()-today.getDay()+index*28);return start;
+  const start=new Date(today);
+  start.setDate(today.getDate()-today.getDay()+index*28);
+  return start;
 }
 function dateYmd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function dateJa(d){return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${["日","月","火","水","木","金","土"][d.getDay()]}）`}
+
+function getDateFinalizeTargetUsers(s){
+  const map=new Map();
+  if(s.ownerId)map.set(s.ownerId,{id:s.ownerId,name:s.ownerName||"予定作成者"});
+  (s.participants||[]).forEach(p=>{
+    if(p.userId&&!map.has(p.userId))map.set(p.userId,{id:p.userId,name:p.userName||"参加者"});
+  });
+  return [...map.values()];
+}
+
+function calculateScenarioDateJudgement(s,ymd){
+  const targets=dateFinalizeTargetUsers;
+  if(!targets.length)return {status:"none",label:"－",reason:"判定対象者がいません。"};
+  let ok=0,no=0,missing=[];
+  targets.forEach(u=>{
+    const answer=(data.answers?.[u.id]?.[ymd])||"";
+    if(answer==="○")ok++;
+    else if(answer==="△"){}
+    else if(answer==="×")no++;
+    else missing.push(u.name);
+  });
+  if(missing.length)return {status:"none",label:"－",reason:`未取得者：${missing.join("、")}`};
+  if(no>0)return {status:"no",label:"×",reason:`×：${no}人 / ${targets.length}人`};
+  const rate=ok/targets.length;
+  if(ok===targets.length)return {status:"ok3",label:"◎",reason:"全員○"};
+  if(rate>0.5)return {status:"ok",label:"○",reason:`○：${ok}人 / ${targets.length}人`};
+  return {status:"maybe",label:"△",reason:`○：${ok}人 / ${targets.length}人`};
+}
+
 function dateFinalizeMove(delta){
-  dateFinalizePageIndex=Math.max(0,dateFinalizePageIndex+delta);
+  const next=Math.max(0,dateFinalizePageIndex+delta);
+  if(delta>0&&dateFinalizeScenarioId){
+    const s=scenarioSchedules.find(x=>x.id===dateFinalizeScenarioId);
+    if(s){
+      const start=datePageStart(next);
+      for(let i=0;i<28;i++){
+        const d=new Date(start);d.setDate(start.getDate()+i);
+        const ymd=dateYmd(d);
+        if(!dateFinalizeJudgements[ymd])dateFinalizeJudgements[ymd]=calculateScenarioDateJudgement(s,ymd);
+      }
+    }
+  }
+  dateFinalizePageIndex=next;
   renderDateFinalizeCalendar();
 }
+
 function renderDateFinalizeCalendar(){
-  const start=datePageStart(dateFinalizePageIndex),end=new Date(start);end.setDate(start.getDate()+27);
+  const start=datePageStart(dateFinalizePageIndex),end=new Date(start);
+  end.setDate(start.getDate()+27);
   document.getElementById("datePickerRange").textContent=`${start.getFullYear()}/${start.getMonth()+1}/${start.getDate()} ～ ${end.getFullYear()}/${end.getMonth()+1}/${end.getDate()}`;
-  document.getElementById("datePrevButton").style.display=dateFinalizePageIndex>0?"inline-flex":"none";
+  document.getElementById("datePrevButton").style.display="none";
+
   const grid=document.getElementById("datePickerGrid");grid.innerHTML="";
+  ["日","月","火","水","木","金","土"].forEach(w=>{
+    const x=document.createElement("div");x.className="date-judge-weekday";x.textContent=w;grid.appendChild(x);
+  });
+
   const today=dateOnlyToday();
   for(let i=0;i<28;i++){
     const d=new Date(start);d.setDate(start.getDate()+i);
     const ymd=dateYmd(d),past=d<today;
-    const b=document.createElement("button");b.type="button";b.className="date-cell";
-    if(d.getTime()===today.getTime())b.classList.add("today");
-    if(past)b.classList.add("past");
-    if(ymd===dateFinalizeSelectedDate)b.classList.add("selected");
-    b.disabled=past;
-    b.innerHTML=`<span class="date-number">${d.getDate()}</span><span class="date-week">${["日","月","火","水","木","金","土"][d.getDay()]}曜日</span>`;
-    if(!past)b.onclick=()=>selectDateForFinalize(ymd);
-    grid.appendChild(b);
+    const j=dateFinalizeJudgements[ymd]||{status:"none",label:"－",reason:"デイコード未取得"};
+    const cell=document.createElement("button");
+    cell.type="button";
+    cell.className="date-judge-cell judge-"+j.status;
+    if(d.getTime()===today.getTime())cell.classList.add("today");
+    if(past)cell.classList.add("past");
+    if(ymd===dateFinalizeSelectedDate)cell.classList.add("selected");
+    cell.innerHTML=`<span class="date-judge-number">${d.getDate()}</span><span class="date-judge-status">${j.label}</span>`;
+    const selectable=!past&&["ok3","ok","maybe"].includes(j.status);
+    cell.disabled=!selectable;
+    if(selectable)cell.onclick=()=>selectDateForFinalize(ymd);
+    cell.title=j.reason||"";
+    grid.appendChild(cell);
   }
+  const help=document.getElementById("dateFinalizeHelp");
+  if(help)help.textContent="日程判定は、予定作成者（KP）＋現在登録されている参加者全員のデイコードから算出します。×・未取得者ありの日は選択できません。";
 }
+
 function populateFinalTimeSelects(){
   const hour=document.getElementById("finalHour"),minute=document.getElementById("finalMinute");
-  hour.innerHTML="";for(let h=0;h<=24;h++){const o=document.createElement("option");o.value=String(h).padStart(2,"0");o.textContent=h+"時";hour.appendChild(o)}
-  minute.innerHTML="";for(let m=0;m<60;m+=5){const o=document.createElement("option");o.value=String(m).padStart(2,"0");o.textContent=String(m).padStart(2,"0")+"分";minute.appendChild(o)}
+  hour.innerHTML="";
+  for(let h=0;h<=24;h++){const o=document.createElement("option");o.value=String(h).padStart(2,"0");o.textContent=h+"時";hour.appendChild(o)}
+  minute.innerHTML="";
+  for(let m=0;m<60;m+=5){const o=document.createElement("option");o.value=String(m).padStart(2,"0");o.textContent=String(m).padStart(2,"0")+"分";minute.appendChild(o)}
   dateFinalizeHourChanged();
 }
 function dateFinalizeHourChanged(){
@@ -1458,9 +1557,11 @@ function dateFinalizeHourChanged(){
   if(hour==="24")minute.value="00";
 }
 function selectDateForFinalize(ymd){
+  const j=dateFinalizeJudgements[ymd];
+  if(!j||!["ok3","ok","maybe"].includes(j.status))return;
   dateFinalizeSelectedDate=ymd;
   const d=new Date(ymd+"T00:00:00");
-  document.getElementById("selectedDateLabel").textContent=dateJa(d)+" の開催時刻";
+  document.getElementById("selectedDateLabel").textContent=dateJa(d)+" の開催時刻（総合判定："+j.label+"）";
   document.getElementById("dateCalendarView").style.display="none";
   document.getElementById("dateTimeView").style.display="block";
   populateFinalTimeSelects();
@@ -1470,9 +1571,25 @@ function dateFinalizeBackToCalendar(){
   document.getElementById("dateCalendarView").style.display="block";
   renderDateFinalizeCalendar();
 }
-function finalizeScenarioDate(id){
-  const s=scenarioSchedules.find(x=>x.id===id);if(!s||!isScenarioOwner(s))return;
-  dateFinalizeScenarioId=id;dateFinalizePageIndex=0;dateFinalizeSelectedDate="";
+async function finalizeScenarioDate(id){
+  const s=scenarioSchedules.find(x=>x.id===id);
+  if(!s||!isScenarioOwner(s))return;
+  if(!currentUserId()){alert("Discordでログインしてください。");return}
+  if(!daycodeReady)await dcLoadFromSupabase();
+
+  dateFinalizeScenarioId=id;
+  dateFinalizePageIndex=0;
+  dateFinalizeSelectedDate="";
+  dateFinalizeTargetUsers=getDateFinalizeTargetUsers(s);
+  dateFinalizeJudgements={};
+
+  const start=datePageStart(0);
+  for(let i=0;i<28;i++){
+    const d=new Date(start);d.setDate(start.getDate()+i);
+    const ymd=dateYmd(d);
+    dateFinalizeJudgements[ymd]=calculateScenarioDateJudgement(s,ymd);
+  }
+
   document.getElementById("dateFinalizeTitle").textContent=`「${s.title}」の日程確定`;
   document.getElementById("dateCalendarView").style.display="block";
   document.getElementById("dateTimeView").style.display="none";
@@ -1496,12 +1613,14 @@ async function saveFinalScenarioDate(){
     alert("日程の保存に失敗しました。Supabaseの権限設定を確認してください。");
   }
 }
+
 function cancelScheduleForm(){
   scenarioEditingId=null;
   home(document.querySelector('[data-page="ホーム"]'));
 }
 function renderAllScenarioData(){
   renderHomeRecruit();
+  buildCalendar();
 }
 
 function openLegal(type){document.getElementById("modalTitle").textContent=legal[type].title;document.getElementById("modalBody").innerHTML=legal[type].body;document.getElementById("modal").classList.add("open")}
@@ -1721,18 +1840,52 @@ async function officialCopy(){
   }
 }
 
+function homeScenarioListForDate(ymd){
+ const uid=currentUserId();
+ if(!uid)return [];
+ return scenarioSchedules.filter(s=>s.finalDate&&s.finalDate.startsWith(ymd)&&(s.ownerId===uid||(s.participants||[]).some(p=>p.userId===uid)));
+}
+function openHomeScenarioModal(id){
+ const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
+ const d=s.finalDate?new Date(s.finalDate.replace(" ","T")):null;
+ const dateText=d&&!isNaN(d.getTime())?dateJa(d):"開催日時未設定";
+ const participants=(s.participants||[]).map(p=>`<div style="padding:5px 0">${scenarioEscape(p.userName)}（${(p.role||"pl")==="skp"?"SKP":"PL"}）</div>`).join("");
+ document.getElementById("homeScenarioModalTitle").textContent=s.title;
+ document.getElementById("homeScenarioModalBody").innerHTML=`
+   <div><strong>開催日時</strong><br>${scenarioEscape(dateText)}</div>
+   <div style="margin-top:14px"><strong>作成者</strong><br>${scenarioEscape(s.ownerName||"")}</div>
+   <div style="margin-top:14px"><strong>参加者</strong><br>${participants||"参加者情報なし"}</div>
+   ${s.description?`<div style="margin-top:14px"><strong>シナリオ概要</strong><br>${scenarioEscape(s.description)}</div>`:""}
+   <div style="margin-top:16px"><button class="primary-action" onclick="closeHomeScenarioModal();scheduleJoinedPage(document.querySelector('[data-page=&quot;参加希望済みシナリオ&quot;]'))">シナリオ詳細を見る</button></div>
+ `;
+ document.getElementById("homeScenarioModal").classList.add("open");
+}
+function closeHomeScenarioModal(){document.getElementById("homeScenarioModal").classList.remove("open")}
+function homeScenarioBackdrop(e){if(e.target.id==="homeScenarioModal")closeHomeScenarioModal()}
+
 function buildCalendar(){
- const box=document.getElementById("calendar"),names=["日","月","火","水","木","金","土"];
+ const box=document.getElementById("calendar");if(!box)return;
+ box.innerHTML="";
+ const names=["日","月","火","水","木","金","土"];
  names.forEach(n=>{const x=document.createElement("div");x.className="weekday";x.textContent=n;box.appendChild(x)});
  const today=new Date();today.setHours(0,0,0,0);
  const start=new Date(today);start.setDate(today.getDate()-today.getDay());
  for(let i=0;i<28;i++){
   const d=new Date(start);d.setDate(start.getDate()+i);
+  const ymd=dateYmd(d);
   const x=document.createElement("div");x.className="day";
   if(d.getMonth()!=today.getMonth())x.classList.add("muted");
   if(d.getTime()==today.getTime())x.classList.add("today");
-  if(d.getDay()==0)x.classList.add("sun"); if(d.getDay()==6)x.classList.add("sat");
-  x.innerHTML='<span class="num">'+d.getDate()+'</span>';box.appendChild(x);
+  if(d.getDay()==0)x.classList.add("sun");
+  if(d.getDay()==6)x.classList.add("sat");
+  x.innerHTML='<span class="num">'+d.getDate()+'</span>';
+  homeScenarioListForDate(ymd).forEach(s=>{
+    const mark=document.createElement("button");
+    mark.type="button";mark.className="home-scenario-mark";
+    mark.textContent=s.title;mark.title=s.title;mark.onclick=()=>openHomeScenarioModal(s.id);
+    x.appendChild(mark);
+  });
+  box.appendChild(x);
  }
 }
 buildCalendar();
