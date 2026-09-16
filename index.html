@@ -176,7 +176,8 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .daycode-page .status{color:#18743a;font-size:13px;margin-left:auto}
 .daycode-page .table-wrap{overflow:auto;background:#fff;border:1px solid #ddd}
 .daycode-page table{border-collapse:collapse;min-width:720px;width:100%}.daycode-page th,.daycode-page td{border:1px solid #ddd;padding:8px;text-align:center;white-space:nowrap}
-.daycode-page th{background:#f0f1f3;position:sticky;top:73px;z-index:2}.daycode-page .date{position:sticky;left:0;background:#fff;text-align:left;z-index:1}
+.daycode-page th{background:#f0f1f3;position:sticky;top:0;z-index:2}.daycode-page .date{position:sticky;left:0;background:#fff;text-align:left;z-index:1}
+.daycode-page .daycode-judgement{font-weight:800;min-width:58px}.daycode-page .daycode-judgement.ok3{color:#2c8a3f;background:#dff4df}.daycode-page .daycode-judgement.ok{color:#1762c7;background:#e4f0ff}.daycode-page .daycode-judgement.maybe{color:#b07b00;background:#fff4cf}.daycode-page .daycode-judgement.no{color:#c43a3a;background:#ffe1e1}.daycode-page .daycode-judgement.none{color:#697484;background:#eceff2}
 .daycode-page th.date{background:#f0f1f3;z-index:3}.daycode-page .member{text-decoration:underline;cursor:pointer}.daycode-page .answer{font-weight:700}.daycode-page .none{color:#999}.daycode-page .ok{color:#1762c7}.daycode-page .maybe{color:#d79b00}.daycode-page .no{color:#d33a3a}
 .daycode-page .editor{display:none}.daycode-page .editor.active{display:block}.daycode-page .bulk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:12px 0}
 .daycode-page .bulkbox{border:1px solid #ddd;border-radius:6px;padding:6px;text-align:center;background:#fafafa}.daycode-page .bulkbox select{width:100%;margin-top:5px}
@@ -225,6 +226,8 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .schedule-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .schedule-actions button{border:1px solid #dce3eb;border-radius:8px;background:#f7f9fc;color:#596675;font:inherit;font-size:13px;font-weight:700;padding:9px 14px;cursor:pointer}
 .schedule-actions .primary-action{border:0;color:#fff;background:linear-gradient(110deg,var(--blue1),var(--blue2) 55%,var(--blue3))}
+.schedule-actions .date-finalize-disabled{border:0;color:#fff;background:#c7cdd4;cursor:not-allowed;opacity:1}
+.schedule-actions .date-finalize-disabled:hover{filter:none}
 .schedule-actions .danger-action{color:#b44955}
 .schedule-actions button:hover{filter:brightness(1.03)}
 .user-picker-note{font-size:12px;color:var(--muted)}
@@ -407,7 +410,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
     <div class="date-judge-calendar" id="datePickerGrid"></div>
     <p class="date-judge-help" id="dateFinalizeHelp">日程判定を読み込んでいます。</p>
   </div>
-  <div id="dateTimeView style="display:none">
+  <div id="dateTimeView" style="display:none">
     <div class="selected-date-label" id="selectedDateLabel"></div>
     <div class="date-time-selects">
       <label>時<select id="finalHour" onchange="dateFinalizeHourChanged()"></select></label>
@@ -1208,6 +1211,22 @@ async function saveScenarioSchedule(){
   }
 }
 
+function scenarioParticipantCountForCapacity(s){
+  // 定員はPL枠なので、SKPは定員判定の人数に含めない。
+  return schedulePLCount(s);
+}
+
+function isScenarioCapacitySatisfied(s){
+  if(!s)return false;
+  const count=scenarioParticipantCountForCapacity(s);
+  const min=scheduleMin(s);
+  const max=scheduleMax(s);
+  if(!Number.isFinite(count)||!Number.isFinite(min)||!Number.isFinite(max))return false;
+
+  if(s.capacityMode==="exact")return count===max;
+  return count>=min&&count<=max;
+}
+
 function renderScheduleCard(s,mode="home"){
   const owner=isScenarioOwner(s);
   const me=participantOf(s);
@@ -1250,7 +1269,7 @@ function renderScheduleCard(s,mode="home"){
       ${s.cocofolia?`<a class="schedule-link" href="${scenarioEscape(s.cocofolia)}" target="_blank" rel="noopener">ココフォリア</a>`:""}
       ${joinButtons}
       ${owner&&s.status==="recruiting"?`<button onclick="editScenarioSchedule('${s.id}')">内容変更</button>`:""}
-      ${owner&&s.status==="recruiting"?`<button onclick="finalizeScenarioDate('${s.id}')">日程確定</button>`:""}
+      ${owner&&s.status==="recruiting"?(isScenarioCapacitySatisfied(s)?`<button class="primary-action" onclick="finalizeScenarioDate('${s.id}')">日程確定</button>`:`<button class="date-finalize-disabled" disabled title="募集人数が条件を満たしていません。">日程確定</button>`):""}
       ${owner&&s.status==="scheduled"?`<button class="primary-action" onclick="markScenarioPlayed('${s.id}')">プレイ済みにする</button>`:""}
     </div>
   </section>`;
@@ -1263,12 +1282,12 @@ function renderHomeRecruit(){
 }
 function renderScheduleManage(){
   const box=document.getElementById("scheduleManageList");
-  const list=scenarioSchedules.filter(s=>isScenarioOwner(s));
+  const list=scenarioSchedules.filter(s=>isScenarioOwner(s)&&s.status!=="completed");
   box.innerHTML=list.length?list.map(s=>renderScheduleCard(s,"manage")).join(""):'<div class="empty">予定作成済みのシナリオはありません。</div>';
 }
 function renderJoinedSchedules(){
   const box=document.getElementById("scheduleJoinedList");
-  const list=scenarioSchedules.filter(s=>isScenarioParticipant(s));
+  const list=scenarioSchedules.filter(s=>isScenarioParticipant(s)&&s.status!=="completed");
   box.innerHTML=list.length?list.map(s=>renderScheduleCard(s,"joined")).join(""):'<div class="empty">参加希望済みのシナリオはありません。</div>';
 }
 async function openScheduleApply(id,isEdit){
@@ -1574,6 +1593,10 @@ function dateFinalizeBackToCalendar(){
 async function finalizeScenarioDate(id){
   const s=scenarioSchedules.find(x=>x.id===id);
   if(!s||!isScenarioOwner(s))return;
+  if(!isScenarioCapacitySatisfied(s)){
+    alert("募集人数が条件を満たしていないため、日程を確定できません。");
+    return;
+  }
   if(!currentUserId()){alert("Discordでログインしてください。");return}
   if(!daycodeReady)await dcLoadFromSupabase();
 
@@ -1599,6 +1622,11 @@ async function finalizeScenarioDate(id){
 }
 async function saveFinalScenarioDate(){
   if(!dateFinalizeScenarioId||!dateFinalizeSelectedDate)return;
+  const scenario=scenarioSchedules.find(x=>x.id===dateFinalizeScenarioId);
+  if(!scenario||!isScenarioOwner(scenario)||!isScenarioCapacitySatisfied(scenario)){
+    alert("募集人数が条件を満たしていないため、日程を確定できません。");
+    return;
+  }
   const hour=document.getElementById("finalHour").value,minute=document.getElementById("finalMinute").value;
   const finalDate=`${dateFinalizeSelectedDate} ${hour}:${minute}`;
   try{
@@ -1963,6 +1991,30 @@ function dcEsc(s){
   }[c]));
 }
 
+/* ===== 過去日のデータ削除 ===== */
+async function dcCleanupPastData(){
+  const today=dcFmt(dateOnlyToday());
+
+  try{
+    // 回答データは過去日を全体から削除する。RLS等で制限されている場合は、
+    // 読み込みを止めずに画面表示側でも過去日を除外する。
+    const {error:answerError}=await supabaseClient
+      .from("daycode_answers")
+      .delete()
+      .lt("date",today);
+    if(answerError)console.warn("Past daycode answers cleanup skipped:",answerError);
+
+    // 回答を削除した後、過去日のマスタ日付も削除する。
+    const {error:dateError}=await supabaseClient
+      .from("daycode_dates")
+      .delete()
+      .lt("date",today);
+    if(dateError)console.warn("Past daycode dates cleanup skipped:",dateError);
+  }catch(e){
+    console.warn("Past daycode cleanup skipped:",e);
+  }
+}
+
 /* ===== 日付をDBへ追加 ===== */
 async function dcEnsureMonth(year,month){
   const last=new Date(year,month+1,0).getDate();
@@ -2008,6 +2060,7 @@ async function dcLoadFromSupabase(){
       return;
     }
 
+    await dcCleanupPastData();
     await dcEnsureDates();
 
     const [
@@ -2040,7 +2093,8 @@ async function dcLoadFromSupabase(){
       name:row.display_name
     }));
 
-    data.dates=(dateRows||[]).map(row=>row.date);
+    const todayYmd=dcFmt(dateOnlyToday());
+    data.dates=(dateRows||[]).map(row=>row.date).filter(d=>d>=todayYmd);
 
     data.answers={};
     (answerRows||[]).forEach(row=>{
@@ -2091,6 +2145,48 @@ async function dcEnsureCurrentUser(){
   }
 }
 
+/* ===== 全員の日程判定 ===== */
+function dcCalculateAllMembersJudgement(date){
+  const members=data.members||[];
+  if(!members.length){
+    return {status:"none",label:"－",reason:"判定対象者がいません。"};
+  }
+
+  let ok=0,no=0,missing=[];
+  members.forEach(m=>{
+    const answer=(data.answers?.[m.id]?.[date])||"";
+    if(answer==="○")ok++;
+    else if(answer==="△"){}
+    else if(answer==="×")no++;
+    else missing.push(m.name);
+  });
+
+  if(missing.length){
+    return {
+      status:"none",
+      label:"－",
+      reason:`未取得者：${missing.join("、")}`
+    };
+  }
+
+  if(no>0){
+    return {
+      status:"no",
+      label:"×",
+      reason:`×：${no}人 / ${members.length}人`
+    };
+  }
+
+  const rate=ok/members.length;
+  if(ok===members.length){
+    return {status:"ok3",label:"◎",reason:"全員○"};
+  }
+  if(rate>0.5){
+    return {status:"ok",label:"○",reason:`○：${ok}人 / ${members.length}人`};
+  }
+  return {status:"maybe",label:"△",reason:`○：${ok}人 / ${members.length}人`};
+}
+
 /* ===== 表示 ===== */
 function dcRender(){
   const name=dcCurrentUser();
@@ -2100,7 +2196,7 @@ function dcRender(){
     userEl.textContent=name||"未ログイン";
   }
 
-  let h="<thead><tr><th class='date'>日程</th>";
+  let h="<thead><tr><th class='date'>日程</th><th class='daycode-judgement'>判定</th>";
 
   data.members.forEach(m=>{
     h+=`<th>
@@ -2114,7 +2210,17 @@ function dcRender(){
   h+="</tr></thead><tbody>";
 
   data.dates.forEach(d=>{
+    const j=dcCalculateAllMembersJudgement(d);
     h+=`<tr><td class="date">${dcDateText(d)}</td>`;
+
+    const judgementClass=
+      j.status==="ok3" ? "ok3" :
+      j.status==="ok" ? "ok" :
+      j.status==="maybe" ? "maybe" :
+      j.status==="no" ? "no" :
+      "none";
+
+    h+=`<td class="daycode-judgement ${judgementClass}" title="${dcEsc(j.reason||"")}">${j.label}</td>`;
 
     data.members.forEach(m=>{
       const a=(data.answers[m.id]&&data.answers[m.id][d])||"";
