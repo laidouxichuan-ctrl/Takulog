@@ -449,29 +449,25 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </section>
 
 <section class="card daycode-page" id="daycodePage" style="display:none">
-  <h2 class="section-title daycode-title">デイコード</h2>
-  <p class="daycode-note">開催可能日の入力・確認</p>
-<section class="card daycode-page" id="daycodePage" style="display:none">
-<section class="panel toolbar">
+  <section class="panel toolbar">
 <label>入力ユーザー：<select id="dc-user"></select></label>
-<button onclick="dcOpenEditor()">自分の日程を入力</button>
-<button onclick="dcAddNextMonth()">翌月分を追加</button>
-<span id="dc-dcStatus" class="dcStatus"></span>
+<button onclick="openEditor()">自分の日程を入力</button>
+<button onclick="addNextMonth()">翌月分を追加</button>
+<span id="dc-dcStatus" class="status"></span>
 </section>
 
 <div class="table-wrap"><table id="dc-table"></table></div>
 
 <section id="dc-editor" class="panel editor">
 <h2 id="dc-editorTitle"></h2>
-<div class="actions editor-top-actions"><button class="primary" onclick="dcSaveEditor()">日程登録</button><button onclick="dcCloseEditor()">キャンセル</button></div>
+<div class="actions editor-top-actions"><button class="primary" onclick="saveEditor()">日程登録</button><button onclick="closeEditor()">キャンセル</button></div>
 <div class="panel" style="background:#fafafa">
 <b>曜日一括入力</b>
 <div class="note">選択した曜日のすべての日付へ一括反映します。反映後、個別に変更できます。</div>
 <div id="dc-bulk" class="bulk"></div>
 </div>
 <div id="dc-days"></div>
-<div class="actions"><button class="primary" onclick="dcSaveEditor()">日程登録</button><button onclick="dcCloseEditor()">キャンセル</button></div>
-</section>
+<div class="actions"><button class="primary" onclick="saveEditor()">日程登録</button><button onclick="closeEditor()">キャンセル</button></div>
 </section>
 </section>
 
@@ -1650,14 +1646,14 @@ function dcFresh(){
 }
 function dcLoad(){try{return JSON.parse(localStorage.getItem(KEY))||dcFresh()}catch(e){return dcFresh()}}
 function dcSave(){localStorage.setItem(KEY,JSON.stringify(data));dcStatus("保存しました")}
-function dcStatus(t){const e=document.getElementById("dcStatus");e.textContent=t;setTimeout(()=>e.textContent="",1300)}
+function dcStatus(t){const e=document.getElementById("dc-dcStatus");e.textContent=t;setTimeout(()=>e.textContent="",1300)}
 function dcFmt(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function dcDateText(s){const d=new Date(s+"T00:00:00");return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${WD[d.getDay()]}）`}
 function dcEnsure(u,d){data.answers[u]??={};data.answers[u][d]??="";return data.answers[u][d]}
 function dcEsc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
 function dcRender(){
- const sel=document.getElementById("user");sel.innerHTML="";
+ const sel=document.getElementById("dc-user");sel.innerHTML="";
  data.members.forEach(m=>{const o=document.createElement("option");o.value=m;o.textContent=m;sel.appendChild(o)});
  let h="<thead><tr><th class='date'>日程</th>";
  data.members.forEach(m=>h+=`<th><span class="member" onclick='dcChoose(${JSON.stringify(m)})'>${dcEsc(m)}</span></th>`);
@@ -1667,18 +1663,18 @@ function dcRender(){
   data.members.forEach(m=>{const a=dcEnsure(m,d);const c=a==="○"?"ok":a==="△"?"maybe":a==="×"?"no":"none";h+=`<td class="answer ${c}">${a||"－"}</td>`});
   h+="</tr>";
  });
- document.getElementById("table").innerHTML=h+"</tbody>";
+ document.getElementById("dc-table").innerHTML=h+"</tbody>";
 }
-function dcChoose(m){document.getElementById("user").value=m;dcOpenEditor()}
+function dcChoose(m){document.getElementById("dc-user").value=m;dcOpenEditor()}
 function dcOpenEditor(){
- editing=document.getElementById("user").value;if(!editing)return;
+ editing=document.getElementById("dc-user").value;if(!editing)return;
  draft=JSON.parse(JSON.stringify(data.answers[editing]||{}));
- document.getElementById("editorTitle").textContent=editing+" さんの日程登録";
- dcRenderBulk();dcRenderDays();document.getElementById("editor").classList.add("active");
- document.getElementById("editor").scrollIntoView({behavior:"smooth"});
+ document.getElementById("dc-editorTitle").textContent=editing+" さんの日程登録";
+ dcRenderBulk();dcRenderDays();document.getElementById("dc-editor").classList.add("active");
+ document.getElementById("dc-editor").scrollIntoView({behavior:"smooth"});
 }
 function dcRenderBulk(){
- const b=document.getElementById("bulk");b.innerHTML="";
+ const b=document.getElementById("dc-bulk");b.innerHTML="";
  WD.forEach((w,i)=>{b.innerHTML+=`<div class="bulkbox">${w}曜日<select onchange="dcBulkSet(${i},this.value)"><option value="">変更しない</option><option>○</option><option>△</option><option>×</option></select></div>`})
 }
 function dcBulkSet(i,v){
@@ -1687,7 +1683,7 @@ function dcBulkSet(i,v){
  dcRenderDays();
 }
 function dcRenderDays(){
- const box=document.getElementById("days");box.innerHTML="";
+ const box=document.getElementById("dc-days");box.innerHTML="";
  data.dates.forEach(d=>{
   const a=draft[d]||"";
   box.innerHTML+=`<div class="day"><div>${dcDateText(d)}</div><div class="choices">${["○","△","×"].map(v=>`<button class="choice ${a===v?"selected":""}" onclick='dcSetAnswer(${JSON.stringify(d)},${JSON.stringify(v)})'>${v}</button>`).join("")}</div></div>`
@@ -1695,7 +1691,7 @@ function dcRenderDays(){
 }
 function dcSetAnswer(d,v){draft[d]=v;dcRenderDays()}
 function dcSaveEditor(){data.answers[editing]={...draft};dcSave();dcRender();dcCloseEditor()}
-function dcCloseEditor(){document.getElementById("editor").classList.remove("active");editing=null;draft={}}
+function dcCloseEditor(){document.getElementById("dc-editor").classList.remove("active");editing=null;draft={}}
 function dcAddMember(){
  const n=prompt("参加者名を入力してください");if(!n||data.members.includes(n))return;
  data.members.push(n);data.answers[n]={};dcSave();dcRender()
