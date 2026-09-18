@@ -96,6 +96,11 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .sidebar.collapsed .account-info,.sidebar.collapsed .account-logout{display:none;}
 .sidebar.collapsed .account-avatar{width:38px;height:38px;}
 .auth-status{font-size:12px;color:#7b8592;margin-top:6px;text-align:center;}
+.user-identity{display:inline-flex;align-items:center;gap:7px;vertical-align:middle;min-width:0;}
+.user-avatar-inline{width:28px;height:28px;border-radius:50%;object-fit:cover;background:#eaf3ff;flex:none;}
+.user-avatar-inline.small{width:24px;height:24px;}
+.user-avatar-fallback{display:inline-flex;align-items:center;justify-content:center;color:#6d7b8b;font-size:11px;font-weight:700;background:#eaf3ff;flex:none;}
+.user-name-inline{min-width:0;}
 
 @media(max-width:700px){
 .sidebar{width:72px}.sidebar .brand-name,.sidebar .label{display:none}.nav button{justify-content:center;padding:0}
@@ -118,7 +123,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .output-choice{margin-top:18px;padding:15px;border:1px solid var(--line);border-radius:11px;display:flex;align-items:center;justify-content:space-between;gap:15px;background:#f8fafc}
 .output-title{font-weight:750;font-size:14px}
 .output-help{font-size:12px;color:var(--muted);margin-top:3px}
-.palette-button{width:150px;min-height:45px;font-size:14px}
+.palette-button{width:150px;min-height:45px;font-size:14px;white-space:nowrap;word-break:keep-all}
 .result-card{margin-top:16px;min-height:90px;border:1px solid var(--line);border-radius:11px;background:#fff;padding:15px;white-space:pre-wrap;word-break:break-word}
 .result-empty{color:#a3acb8;font-size:13px}
 .result-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans JP",monospace;font-size:14px;line-height:1.8;color:#202630}
@@ -657,6 +662,7 @@ async function restoreDiscordSession(){
     const {data,error}=await supabaseClient.auth.getSession();
     if(error)throw error;
     renderAccount(data.session?.user||null);
+    if(data.session?.user)await refreshUserProfiles(data.session.user);
   }catch(e){
     console.error(e);
     renderAccount(null);
@@ -668,6 +674,7 @@ async function handleDiscordCallback(){
     const {data,error}=await supabaseClient.auth.getSession();
     if(error)throw error;
     renderAccount(data.session?.user||null);
+    if(data.session?.user)await refreshUserProfiles(data.session.user);
     if(location.search.includes('code=')){
       history.replaceState({},'',DISCORD_REDIRECT_URI);
     }
@@ -685,8 +692,16 @@ async function discordLogout(){
 
 supabaseClient.auth.onAuthStateChange((_event,session)=>{
   renderAccount(session?.user||null);
-  if(session?.user) refreshManagedData();
-  else { managedIacharaCharacters=[]; managedCocofoliaRooms=[]; managedDataReady=false; }
+  if(session?.user){
+    setTimeout(async()=>{
+      await refreshUserProfiles(session.user);
+      await refreshManagedData();
+      if(typeof refreshScenarioData==="function")await refreshScenarioData();
+    },0);
+  }else{
+    userProfiles.clear();
+    managedIacharaCharacters=[]; managedCocofoliaRooms=[]; managedDataReady=false;
+  }
 });
 
 const legal={
@@ -940,6 +955,78 @@ function currentUserName(){
   const u=currentDiscordUser();
   return u ? (u.global_name||u.username||"Discordユーザー") : "未ログイン";
 }
+
+/* ===== Discordユーザー情報（表示名・アイコン） ===== */
+const userProfiles=new Map();
+
+function userProfileFor(discordId,fallbackName="Discordユーザー"){
+  const p=userProfiles.get(discordId);
+  if(p)return p;
+  return {discordId,name:fallbackName||"Discordユーザー",avatarUrl:""};
+}
+
+function userIdentityHtml(discordId,fallbackName="Discordユーザー",small=false){
+  const p=userProfileFor(discordId,fallbackName);
+  const sizeClass=small?" small":"";
+  const avatar=p.avatarUrl
+    ? `<img class="user-avatar-inline${sizeClass}" src="${scenarioEscape(p.avatarUrl)}" alt="Discordアイコン">`
+    : `<span class="user-avatar-inline user-avatar-fallback${sizeClass}" aria-hidden="true">?</span>`;
+  return `<span class="user-identity">${avatar}<span class="user-name-inline">${scenarioEscape(p.name)}</span></span>`;
+}
+
+async function syncCurrentUserProfile(authUser){
+  if(!authUser)return;
+  const u=discordUserFromSupabase(authUser);
+  if(!u?.id)return;
+
+  const name=u.global_name||u.username||"Discordユーザー";
+  const avatar=discordAvatarUrl(u);
+
+  const {error}=await supabaseClient
+    .from("users")
+    .upsert({
+      user_id:authUser.id,
+      discord_id:u.id,
+      display_name:name,
+      avatar_url:avatar||null,
+      updated_at:new Date().toISOString()
+    },{onConflict:"user_id"});
+
+  if(error){
+    console.error("User profile sync error:",error);
+    return;
+  }
+
+  userProfiles.set(u.id,{discordId:u.id,name,avatarUrl:avatar});
+}
+
+async function loadUserProfiles(){
+  try{
+    const {data:rows,error}=await supabaseClient
+      .from("users")
+      .select("user_id,discord_id,display_name,avatar_url");
+
+    if(error)throw error;
+
+    userProfiles.clear();
+    (rows||[]).forEach(row=>{
+      if(!row.discord_id)return;
+      userProfiles.set(row.discord_id,{
+        discordId:row.discord_id,
+        name:row.display_name||"Discordユーザー",
+        avatarUrl:row.avatar_url||""
+      });
+    });
+  }catch(e){
+    console.error("User profile load error:",e);
+  }
+}
+
+async function refreshUserProfiles(authUser){
+  if(authUser)await syncCurrentUserProfile(authUser);
+  await loadUserProfiles();
+}
+
 function scenarioEscape(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function scenarioSystemValue(){
   const v=document.getElementById("scheduleSystem").value;
@@ -1093,8 +1180,16 @@ function toggleCapacityFields(){
 function discordKnownUsers(){
   const map=new Map();
   scenarioSchedules.forEach(s=>{
-    if(s.ownerId)map.set(s.ownerId,{id:s.ownerId,name:s.ownerName});
-    (s.participants||[]).forEach(p=>{if(p.userId)map.set(p.userId,{id:p.userId,name:p.userName})});
+    if(s.ownerId){
+      const p=userProfileFor(s.ownerId,s.ownerName);
+      map.set(s.ownerId,{id:s.ownerId,name:p.name});
+    }
+    (s.participants||[]).forEach(p0=>{
+      if(p0.userId){
+        const p=userProfileFor(p0.userId,p0.userName);
+        map.set(p0.userId,{id:p0.userId,name:p.name});
+      }
+    });
   });
   return [...map.values()].filter(u=>u.id!==currentUserId());
 }
@@ -1235,7 +1330,7 @@ function renderScheduleCard(s,mode="home"){
     const isSkp=(p.role||"pl")==="skp";
     return `<div class="participant-row">
       <span class="participant-role ${isSkp?"skp":""}">${isSkp?"SKP":"PL"}</span>
-      <span class="participant-name">${scenarioEscape(p.userName)}</span>
+      <span class="participant-name">${userIdentityHtml(p.userId,p.userName,true)}</span>
       ${p.characterName?`<span class="char">（${scenarioEscape(p.characterName)}）</span>`:""}
       ${p.iacharaUrl?`<a class="schedule-link" href="${scenarioEscape(p.iacharaUrl)}" target="_blank" rel="noopener">いあきゃら</a>`:""}
       ${own&&s.status!=="completed"&&isSkp?`<button onclick="cancelOwnSkp('${s.id}')">希望を取り消す</button>`:""}
@@ -1258,7 +1353,7 @@ function renderScheduleCard(s,mode="home"){
         <div class="schedule-meta">${scenarioEscape(s.system)}　｜　PL定員 ${scheduleRangeText(s)}　｜　PL残り募集人数 ${scheduleRemaining(s)}人${s.skpRecruit?"　｜　SKP募集中":""}</div>
         ${s.finalDate?`<div class="schedule-meta">開催日時：${scenarioEscape(s.finalDate)}</div>`:""}
       </div>
-      <div class="schedule-meta">${owner?"作成者：あなた":"KP："+scenarioEscape(s.ownerName)}</div>
+      <div class="schedule-meta">${userIdentityHtml(s.ownerId,owner?currentUserName():s.ownerName,true)}${owner?"（作成者）":"（KP）"}</div>
     </div>
     ${s.description?`<div class="schedule-description">${scenarioEscape(s.description)}</div>`:""}
     <div class="schedule-participants">
@@ -1877,11 +1972,11 @@ function openHomeScenarioModal(id){
  const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
  const d=s.finalDate?new Date(s.finalDate.replace(" ","T")):null;
  const dateText=d&&!isNaN(d.getTime())?dateJa(d):"開催日時未設定";
- const participants=(s.participants||[]).map(p=>`<div style="padding:5px 0">${scenarioEscape(p.userName)}（${(p.role||"pl")==="skp"?"SKP":"PL"}）</div>`).join("");
+ const participants=(s.participants||[]).map(p=>`<div style="padding:5px 0">${userIdentityHtml(p.userId,p.userName)}（${(p.role||"pl")==="skp"?"SKP":"PL"}）</div>`).join("");
  document.getElementById("homeScenarioModalTitle").textContent=s.title;
  document.getElementById("homeScenarioModalBody").innerHTML=`
    <div><strong>開催日時</strong><br>${scenarioEscape(dateText)}</div>
-   <div style="margin-top:14px"><strong>作成者</strong><br>${scenarioEscape(s.ownerName||"")}</div>
+   <div style="margin-top:14px"><strong>作成者</strong><br>${userIdentityHtml(s.ownerId,s.ownerName)}</div>
    <div style="margin-top:14px"><strong>参加者</strong><br>${participants||"参加者情報なし"}</div>
    ${s.description?`<div style="margin-top:14px"><strong>シナリオ概要</strong><br>${scenarioEscape(s.description)}</div>`:""}
    <div style="margin-top:16px"><button class="primary-action" onclick="closeHomeScenarioModal();scheduleJoinedPage(document.querySelector('[data-page=&quot;参加希望済みシナリオ&quot;]'))">シナリオ詳細を見る</button></div>
@@ -1920,6 +2015,8 @@ buildCalendar();
 document.addEventListener("DOMContentLoaded",async()=>{
   await restoreDiscordSession();
   await handleDiscordCallback();
+  const {data:sessionData}=await supabaseClient.auth.getSession();
+  if(sessionData?.session?.user)await refreshUserProfiles(sessionData.session.user);
   await refreshScenarioData();
 });
 
