@@ -602,25 +602,72 @@ const supabaseClient = window.supabase.createClient(
   }
 );
 
+function discordIdentityData(user){
+  const identities=Array.isArray(user?.identities)?user.identities:[];
+  const discordIdentity=identities.find(i=>i.provider==="discord") || identities[0];
+  return discordIdentity?.identity_data || {};
+}
+
 function discordAvatarUrl(user){
   const meta=user?.user_metadata||{};
+  const identity=discordIdentityData(user);
+
   if(meta.avatar_url)return meta.avatar_url;
-  if(meta.avatar) {
-    const discordId=meta.provider_id||meta.sub||"";
-    if(discordId)return `https://cdn.discordapp.com/avatars/${discordId}/${meta.avatar}.png?size=64`;
+  if(identity.avatar_url)return identity.avatar_url;
+
+  const discordId=identity.id || meta.provider_id || meta.sub || user?.id || "";
+  const avatarHash=identity.avatar || meta.avatar || "";
+
+  if(discordId && avatarHash){
+    const ext=String(avatarHash).startsWith("a_") ? "gif" : "png";
+    return `https://cdn.discordapp.com/avatars/${discordId}/${avatarHash}.${ext}?size=128`;
   }
   return "";
 }
 
 function discordUserFromSupabase(user){
   if(!user)return null;
+
   const meta=user.user_metadata||{};
+  const identity=discordIdentityData(user);
+
+  const id=identity.id || meta.provider_id || meta.sub || user.id;
+
+  // DiscordのOAuth情報はidentity_dataを最優先で利用する。
+  const globalName=
+    identity.global_name ||
+    meta.global_name ||
+    identity.display_name ||
+    meta.full_name ||
+    meta.name ||
+    identity.username ||
+    meta.user_name ||
+    meta.preferred_username ||
+    "";
+
+  const username=
+    identity.username ||
+    meta.user_name ||
+    meta.preferred_username ||
+    meta.name ||
+    "";
+
+  const avatar=
+    identity.avatar ||
+    meta.avatar ||
+    "";
+
+  const avatarUrl=
+    identity.avatar_url ||
+    meta.avatar_url ||
+    "";
+
   return {
-    id:meta.provider_id||meta.sub||user.id,
-    global_name:meta.full_name||meta.name||meta.user_name||meta.preferred_username||"",
-    username:meta.user_name||meta.preferred_username||meta.name||"",
-    avatar:meta.avatar||"",
-    avatar_url:meta.avatar_url||""
+    id,
+    global_name:globalName,
+    username,
+    avatar,
+    avatar_url:avatarUrl
   };
 }
 
@@ -980,7 +1027,7 @@ async function syncCurrentUserProfile(authUser){
   if(!u?.id)return;
 
   const name=u.global_name||u.username||"Discordユーザー";
-  const avatar=discordAvatarUrl(u);
+  const avatar=discordAvatarUrl(authUser);
 
   const {error}=await supabaseClient
     .from("users")
