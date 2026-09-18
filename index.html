@@ -603,26 +603,8 @@ const supabaseClient = window.supabase.createClient(
 );
 
 function discordIdentityData(user){
-  const identities=Array.isArray(user?.identities)?user.identities:[];
-  const discordIdentity=identities.find(i=>i.provider==="discord") || identities[0];
-  return discordIdentity?.identity_data || {};
-}
-
-function discordAvatarUrl(user){
-  const meta=user?.user_metadata||{};
-  const identity=discordIdentityData(user);
-
-  if(meta.avatar_url)return meta.avatar_url;
-  if(identity.avatar_url)return identity.avatar_url;
-
-  const discordId=identity.id || meta.provider_id || meta.sub || user?.id || "";
-  const avatarHash=identity.avatar || meta.avatar || "";
-
-  if(discordId && avatarHash){
-    const ext=String(avatarHash).startsWith("a_") ? "gif" : "png";
-    return `https://cdn.discordapp.com/avatars/${discordId}/${avatarHash}.${ext}?size=128`;
-  }
-  return "";
+  const identity=(user?.identities||[]).find(i=>i.provider==="discord");
+  return identity?.identity_data||{};
 }
 
 function discordUserFromSupabase(user){
@@ -630,66 +612,58 @@ function discordUserFromSupabase(user){
 
   const meta=user.user_metadata||{};
   const identity=discordIdentityData(user);
+  const discordId=identity.id||meta.provider_id||meta.sub||"";
+  const displayName=identity.global_name||meta.global_name||meta.full_name||"";
+  const avatarHash=identity.avatar||meta.avatar||"";
+  let avatarUrl=identity.avatar_url||meta.avatar_url||"";
 
-  const id=identity.id || meta.provider_id || meta.sub || user.id;
-
-  // DiscordのOAuth情報はidentity_dataを最優先で利用する。
-  const globalName=
-    identity.global_name ||
-    meta.global_name ||
-    identity.display_name ||
-    meta.full_name ||
-    meta.name ||
-    identity.username ||
-    meta.user_name ||
-    meta.preferred_username ||
-    "";
-
-  const username=
-    identity.username ||
-    meta.user_name ||
-    meta.preferred_username ||
-    meta.name ||
-    "";
-
-  const avatar=
-    identity.avatar ||
-    meta.avatar ||
-    "";
-
-  const avatarUrl=
-    identity.avatar_url ||
-    meta.avatar_url ||
-    "";
+  if(!avatarUrl&&discordId&&avatarHash){
+    const ext=String(avatarHash).startsWith("a_")?"gif":"png";
+    avatarUrl=`https://cdn.discordapp.com/avatars/${discordId}/${avatarHash}.${ext}?size=128`;
+  }
 
   return {
-    id,
-    global_name:globalName,
-    username,
-    avatar,
+    id:discordId,
+    global_name:displayName,
     avatar_url:avatarUrl
   };
 }
 
 function renderAccount(user){
-  const area=document.getElementById('accountArea');
+  const area=document.getElementById("accountArea");
   if(!area)return;
-  if(user){
-    const u=discordUserFromSupabase(user);
-    // Supabaseのログイン情報を、既存のシナリオ機能でも使える形に同期
-    sessionStorage.setItem('discord_user',JSON.stringify(u));
-    const name=u.global_name || u.username || 'Discordユーザー';
-    const avatar=discordAvatarUrl(u);
-    area.innerHTML=`<div class="account-card">${avatar?`<img class="account-avatar" src="${escapeHtml(avatar)}" alt="Discordアイコン">`:`<div class="account-avatar"></div>`}<div class="account-info"><div class="account-name" title="${escapeHtml(name)}">${escapeHtml(name)}</div><div class="account-state">ログイン中</div></div></div><button class="account-logout" onclick="discordLogout()">ログアウト</button>`;
-  }else{
-    sessionStorage.removeItem('discord_user');
+
+  if(!user){
+    sessionStorage.removeItem("discord_user");
     area.innerHTML='<button class="account-login" onclick="discordLogin()">Discordでログイン</button><div class="auth-status" id="authStatus"></div>';
+    return;
   }
+
+  const profile=discordUserFromSupabase(user);
+  if(!profile){
+    area.innerHTML="";
+    return;
+  }
+
+  sessionStorage.setItem("discord_user",JSON.stringify(profile));
+
+  const name=profile.global_name||"Discordユーザー";
+  const avatar=profile.avatar_url;
+  area.innerHTML=`
+    <div class="account-card">
+      ${avatar?`<img class="account-avatar" src="${escapeHtml(avatar)}" alt="Discordアイコン">`:`<div class="account-avatar"></div>`}
+      <div class="account-info">
+        <div class="account-name" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
+        <div class="account-state">ログイン中</div>
+      </div>
+    </div>
+    <button class="account-logout" onclick="discordLogout()">ログアウト</button>`;
 }
 
 function escapeHtml(s){
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\'/g,'&#39;');
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
+
 
 async function discordLogin(){
   const {error}=await supabaseClient.auth.signInWithOAuth({
@@ -1000,7 +974,7 @@ function currentUserId(){
 }
 function currentUserName(){
   const u=currentDiscordUser();
-  return u ? (u.global_name||u.username||"Discordユーザー") : "未ログイン";
+  return u ? (u.global_name||"Discordユーザー") : "未ログイン";
 }
 
 /* ===== Discordユーザー情報（表示名・アイコン） ===== */
@@ -1026,8 +1000,8 @@ async function syncCurrentUserProfile(authUser){
   const u=discordUserFromSupabase(authUser);
   if(!u?.id)return;
 
-  const name=u.global_name||u.username||"Discordユーザー";
-  const avatar=discordAvatarUrl(authUser);
+  const name=u.global_name||"Discordユーザー";
+  const avatar=u.avatar_url;
 
   const {error}=await supabaseClient
     .from("users")
