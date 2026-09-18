@@ -12,7 +12,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .sidebar{position:fixed;display:flex;flex-direction:column;inset:0 auto 0 0;width:250px;background:#fff;border-right:1px solid var(--line);z-index:10;transition:.22s;box-shadow:2px 0 12px #24466d0b}
 .sidebar.collapsed{width:72px}
 .brand{height:74px;display:flex;align-items:center;gap:12px;padding:0 17px;border-bottom:1px solid var(--line);overflow:hidden}
-.die{width:41px;height:41px;flex:none;display:grid;place-items:center;color:#fff;font-size:14px;font-weight:800;background:linear-gradient(145deg,var(--blue1),var(--blue3));clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)}
+.brand-icon{width:41px;height:41px;flex:none;display:block;object-fit:cover;border-radius:8px}
 .brand-name{font-size:19px;font-weight:800;white-space:nowrap}
 .toggle{position:absolute;right:-14px;top:29px;width:28px;height:28px;border:1px solid #d9e1eb;border-radius:50%;background:#fff;color:#596675;box-shadow:0 2px 8px #0001;cursor:pointer}
 .sidebar.collapsed .brand-name,.sidebar.collapsed .label{display:none}
@@ -259,7 +259,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><div class="die">100</div><div class="brand-name">卓ログ</div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div class="brand-name">卓ログ</div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>

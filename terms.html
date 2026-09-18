@@ -8,23 +8,30 @@
 *{box-sizing:border-box}
 :root{--blue1:#65b4ff;--blue2:#3187ed;--blue3:#1762c7;--line:#e5e9f0;--text:#202630;--muted:#7b8592;--bg:#f7f9fc}
 body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+.header{height:74px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 20px}
+.header-inner{width:100%;max-width:900px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.brand-link{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text)}
+.brand-icon{width:41px;height:41px;display:block;object-fit:cover;border-radius:8px;flex:none}
+.brand-name{font-size:19px;font-weight:800;white-space:nowrap}
 .page{max-width:900px;margin:0 auto;padding:28px 20px 50px}
-.header{background:#fff;border-bottom:1px solid var(--line);padding:22px 20px}
-.header-inner{max-width:900px;margin:auto;display:flex;align-items:center;gap:12px}
-.die{width:42px;height:42px;display:grid;place-items:center;color:#fff;font-size:14px;font-weight:800;background:linear-gradient(145deg,var(--blue1),var(--blue3));clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);flex:none}
-.brand{font-size:20px;font-weight:800}
-.card{background:#fff;border:1px solid var(--line);padding:30px 32px;box-shadow:0 4px 16px #24466d0b}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 18px #22466e0b;padding:30px 32px}
 h1{margin:0 0 28px;font-size:28px}
 h2{margin:28px 0 10px;font-size:19px;color:#1765c5}
 p{margin:8px 0 16px}
 .footer{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
-a{color:#1765c5}
-.back{display:inline-block;margin-top:20px;text-decoration:none}
+.footer a{color:#1765c5;text-decoration:none}
 @media(max-width:600px){.page{padding:16px 12px 35px}.card{padding:22px 18px}h1{font-size:24px}}
 </style>
 </head>
 <body>
-<header class="header"><div class="header-inner"><div class="die">TRPG</div><div class="brand">卓ログ</div></div></header>
+<header class="header">
+  <div class="header-inner">
+    <a class="brand-link" href="./">
+      <img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン">
+      <span class="brand-name">卓ログ</span>
+    </a>
+  </div>
+</header>
 <main class="page">
 <article class="card">
 <h1>利用規約</h1>
@@ -61,7 +68,7 @@ a{color:#1765c5}
 <p>お問い合わせ：umineko／laidouxichuan@gmail.com</p>
 
 </article>
-<div class="footer">© 卓ログ</div>
+<div class="footer"><a href="./">卓ログに戻る</a></div>
 </main>
 </body>
 </html>
