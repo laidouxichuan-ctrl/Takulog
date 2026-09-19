@@ -97,11 +97,11 @@ jobs:
 
           if data.strip() == "[]":
               print("このバージョンは未送信です。")
-              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
                   f.write("already_sent=false\n")
           else:
               print("このバージョンは送信済みです。")
-              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
                   f.write("already_sent=true\n")
 
       - name: Skip already sent release
