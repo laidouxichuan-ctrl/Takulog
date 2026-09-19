@@ -33,7 +33,7 @@ jobs:
           )
 
           release_match = re.search(
-              r'<!--\s*TAKULOG_RELEASE_INFO_START\s*-->\s*(.*?)\s*<!--\s*TAKULOG_RELEASE_INFO_END\s*-->',
+              r'<div\b[^>]*\bid=["\']takulog-release-info["\'][^>]*>\s*(.*?)\s*</div>',
               html,
               re.S
           )
