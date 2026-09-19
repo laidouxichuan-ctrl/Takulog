@@ -19,7 +19,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .sidebar.collapsed .brand-name,.sidebar.collapsed .label{display:none}
 .sidebar.collapsed .nav button{justify-content:center;padding:0}
 .sidebar.collapsed .toggle{transform:rotate(180deg)}
-.nav{padding:14px 10px;display:flex;flex-direction:column;gap:5px}
+.nav{padding:14px 10px;display:flex;flex-direction:column;gap:5px;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .nav button{width:100%;min-height:45px;border:0;border-radius:9px;background:transparent;color:#4f5967;display:flex;align-items:center;gap:12px;padding:0 12px;text-align:left;font:inherit;cursor:pointer}
 .nav button:hover{background:#f2f6fb}
 .nav button.active{background:linear-gradient(100deg,#edf6ff,#e4f0ff);color:#1765c5;font-weight:700}
@@ -104,8 +104,14 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .user-name-inline{min-width:0;}
 
 @media(max-width:700px){
-.sidebar{width:72px}.sidebar .brand-name,.sidebar .label{display:none}.nav button{justify-content:center;padding:0}
-.main{margin-left:72px}.topbar{padding:0 16px}.content{padding:18px 12px 30px}
+.sidebar{width:min(250px,82vw);max-width:250px;box-shadow:4px 0 18px #24466d18}
+.sidebar.collapsed{width:0;box-shadow:none;overflow:visible}
+.sidebar.collapsed .brand,.sidebar.collapsed .nav,.sidebar.collapsed .account-area{visibility:hidden}
+.sidebar.collapsed .toggle{right:-28px;transform:none}
+.sidebar:not(.collapsed) .brand-name,.sidebar:not(.collapsed) .label{display:block}
+.sidebar:not(.collapsed) .nav button{justify-content:flex-start;padding:0 12px}
+.main,.sidebar.collapsed~.main{margin-left:0}
+.topbar{padding:0 16px}.content{padding:18px 12px 30px}
 .day{height:60px;padding:6px 4px}
 }
 
@@ -181,16 +187,33 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .daycode-page .primary{background:#222;color:#fff;border-color:#222}.daycode-page .danger{color:#a00}
 .daycode-page .status{color:#18743a;font-size:13px;margin-left:auto}
 .daycode-page .table-wrap{overflow:auto;background:#fff;border:1px solid #ddd}
-.daycode-page table{border-collapse:collapse;min-width:720px;width:100%}.daycode-page th,.daycode-page td{border:1px solid #ddd;padding:8px;text-align:center;white-space:nowrap}
-.daycode-page th{background:#f0f1f3;position:sticky;top:0;z-index:2}.daycode-page .date{position:sticky;left:0;background:#fff;text-align:left;z-index:1}
-.daycode-page .daycode-judgement{font-weight:800;min-width:58px}.daycode-page .daycode-judgement.ok3{color:#2c8a3f;background:#dff4df}.daycode-page .daycode-judgement.ok{color:#1762c7;background:#e4f0ff}.daycode-page .daycode-judgement.maybe{color:#b07b00;background:#fff4cf}.daycode-page .daycode-judgement.no{color:#c43a3a;background:#ffe1e1}.daycode-page .daycode-judgement.none{color:#697484;background:#eceff2}
-.daycode-page th.date{background:#f0f1f3;z-index:3}.daycode-page .member{text-decoration:underline;cursor:pointer}.daycode-page .answer{font-weight:700}.daycode-page .none{color:#999}.daycode-page .ok{color:#1762c7}.daycode-page .maybe{color:#d79b00}.daycode-page .no{color:#d33a3a}
+.daycode-page table{border-collapse:collapse;min-width:100%;width:max-content;table-layout:auto}
+.daycode-page th,.daycode-page td{border:1px solid #ddd;padding:5px 6px;text-align:center;white-space:nowrap}
+.daycode-page th{background:#f0f1f3;position:sticky;top:0;z-index:2}
+.daycode-page .date{position:sticky;left:0;width:104px;min-width:104px;max-width:104px;background:#fff;text-align:left;z-index:3}
+.daycode-page .daycode-judgement{position:sticky;left:104px;width:44px;min-width:44px;max-width:44px;font-weight:800;z-index:3}
+.daycode-page .daycode-judgement.ok3{color:#2c8a3f;background:#dff4df}.daycode-page .daycode-judgement.ok{color:#1762c7;background:#e4f0ff}.daycode-page .daycode-judgement.maybe{color:#b07b00;background:#fff4cf}.daycode-page .daycode-judgement.no{color:#c43a3a;background:#ffe1e1}.daycode-page .daycode-judgement.none{color:#697484;background:#eceff2}
+.daycode-page th.date{background:#f0f1f3;z-index:4}.daycode-page th.daycode-judgement{background:#f0f1f3;z-index:4}.daycode-page .member{text-decoration:underline;cursor:pointer}.daycode-page .answer{font-weight:700;min-width:34px}.daycode-page .none{color:#999}.daycode-page .ok{color:#1762c7}.daycode-page .maybe{color:#d79b00}.daycode-page .no{color:#d33a3a}
 .daycode-page .editor{display:none}.daycode-page .editor.active{display:block}.daycode-page .bulk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:12px 0}
 .daycode-page .bulkbox{border:1px solid #ddd;border-radius:6px;padding:6px;text-align:center;background:#fafafa}.daycode-page .bulkbox select{width:100%;margin-top:5px}
 .daycode-page .day{display:grid;grid-template-columns:1fr 180px;gap:10px;padding:7px 0;border-bottom:1px solid #eee;align-items:center}
 .daycode-page .choices{display:flex;gap:6px;justify-content:flex-end}.daycode-page .choice{min-width:50px;background:#fff}.daycode-page .choice:nth-child(1){color:#1762c7}.daycode-page .choice:nth-child(2){color:#d79b00}.daycode-page .choice:nth-child(3){color:#d33a3a}.daycode-page .choice.selected{font-weight:800;box-shadow:0 0 0 2px currentColor inset}
 .daycode-page .actions{display:flex;gap:8px;margin-top:14px}.daycode-page .editor-top-actions{margin-top:0;margin-bottom:14px}
-@media(max-width:700px){.bulk{grid-template-columns:repeat(2,1fr)}.day{grid-template-columns:1fr}.choices{justify-content:flex-start}.status{width:100%;margin-left:0}}
+@media(max-width:700px){
+.daycode-page .table-wrap{max-width:100%;overflow-x:auto;overflow-y:visible}
+.daycode-page table{min-width:100%;font-size:12px}
+.daycode-page .date{width:104px;min-width:104px;max-width:104px}
+.daycode-page .daycode-judgement{left:104px;width:42px;min-width:42px;max-width:42px}
+.daycode-page th,.daycode-page td{padding:4px 5px}
+.daycode-page .answer{min-width:32px}
+.daycode-page .bulk{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.daycode-page .bulkbox{min-width:0;padding:6px}
+.daycode-page .bulkbox select{min-width:0}
+.daycode-page .day{grid-template-columns:1fr;gap:6px}
+.daycode-page .choices{justify-content:flex-start}
+.daycode-page .choice{min-width:46px}
+.daycode-page .status{width:100%;margin-left:0}
+}
 
 /* ===== シナリオ予定機能 ===== */
 .schedule-page{display:none;padding:18px;margin-bottom:22px}
@@ -265,7 +288,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.0.2</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.1.0</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -560,8 +583,12 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </section>
 
 <div id="takulog-release-info" style="display:none;">
+変更・改善
+・目次のスマートフォンでの表示を改善しました。
+・デイコードのスマートフォンでの表示を改善しました。
+・デイコードから年表示を削除し、表示スペースを確保しました。
 不具合の修正
-・Ver.1.0.1にて追加されたアップデート通知用のリリース情報がサイト上に表示される問題を修正しました。
+・曜日一括入力が画面の枠外にはみ出す問題を修正しました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
@@ -2101,7 +2128,7 @@ function dcFmt(d){
 
 function dcDateText(s){
   const d=new Date(s+"T00:00:00");
-  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${WD[d.getDay()]}）`;
+  return `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${WD[d.getDay()]}）`;
 }
 
 function dcEsc(s){
