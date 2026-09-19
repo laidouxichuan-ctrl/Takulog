@@ -47,18 +47,66 @@ jobs:
           version = version_match.group(1).strip()
           release = release_match.group(1).strip()
 
+          # 空のカテゴリを除去
+          lines = release.splitlines()
+          result = []
+
+          categories = {
+              "新機能",
+              "変更・改善",
+              "不具合の修正"
+          }
+
+          i = 0
+
+          while i < len(lines):
+              line = lines[i].strip()
+
+              if line in categories:
+                  category = line
+                  items = []
+
+                  i += 1
+
+                  while i < len(lines):
+                      item = lines[i].strip()
+
+                      if item in categories:
+                          break
+
+                      if item.startswith("・") and item != "・":
+                          items.append(item)
+
+                      i += 1
+
+                  if items:
+                      result.append(category)
+                      result.extend(items)
+
+                  continue
+
+              i += 1
+
+          release_text = "\n".join(result)
+
+          # Discord通知本文を作成
+          message = (
+              f"卓ログ バージョン更新{version}\n"
+              f"内容は下記となります。\n\n"
+              f"{release_text}\n\n"
+              f"https://laidouxichuan-ctrl.github.io/Takulog/"
+          )
+
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
               f.write(f"version={version}\n")
-              f.write("release<<RELEASE\n")
-              f.write(release)
-              f.write("\nRELEASE\n")
+              f.write("message<<MESSAGE\n")
+              f.write(message)
+              f.write("\nMESSAGE\n")
 
           print("================================")
           print("卓ログ リリース情報")
           print("================================")
-          print(f"Version: {version}")
-          print("")
-          print(release)
+          print(message)
           print("================================")
 
       - name: Check Supabase
@@ -97,23 +145,52 @@ jobs:
 
           if data.strip() == "[]":
               print("このバージョンは未送信です。")
-              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write("already_sent=false\n")
           else:
               print("このバージョンは送信済みです。")
-              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write("already_sent=true\n")
 
-      - name: Skip already sent release
-        if: steps.check.outputs.already_sent == 'true'
-        run: |
-          echo "このバージョンはすでに通知済みなので、Discord送信を行いません。"
-
-      - name: Release notification
+      - name: Send Discord notification
         if: steps.check.outputs.already_sent == 'false'
+        shell: python
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MESSAGE: ${{ steps.release.outputs.message }}
         run: |
-          echo "未送信バージョンです。"
-          echo "ここでDiscord通知処理を実行します。"
+          import os
+          import json
+          import urllib.request
+
+          url = os.environ["SUPABASE_URL"].rstrip("/")
+          key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+          message = os.environ["MESSAGE"]
+
+          data = json.dumps({
+              "action": "send",
+              "message": message
+          }).encode("utf-8")
+
+          request = urllib.request.Request(
+              f"{url}/functions/v1/discord-send",
+              data=data,
+              method="POST",
+              headers={
+                  "apikey": key,
+                  "Authorization": f"Bearer {key}",
+                  "Content-Type": "application/json"
+              }
+          )
+
+          try:
+              with urllib.request.urlopen(request) as response:
+                  result = response.read().decode("utf-8")
+                  print("Discord送信成功")
+                  print(result)
+          except Exception as e:
+              raise Exception(f"Discord送信に失敗しました: {e}")
 
       - name: Record release notification
         if: steps.check.outputs.already_sent == 'false'
@@ -152,3 +229,8 @@ jobs:
                   print(f"Supabase記録成功: HTTP {response.status}")
           except Exception as e:
               raise Exception(f"Supabaseへの送信済み記録に失敗しました: {e}")
+
+      - name: Skip already sent release
+        if: steps.check.outputs.already_sent == 'true'
+        run: |
+          echo "このバージョンはすでに通知済みなので、Discord送信を行いません。"
