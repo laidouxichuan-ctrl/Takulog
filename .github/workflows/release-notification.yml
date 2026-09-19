@@ -93,8 +93,7 @@ jobs:
           message = (
               f"卓ログ バージョン更新{version}\n"
               f"内容は下記となります。\n\n"
-              f"{release_text}\n\n"
-              f"https://laidouxichuan-ctrl.github.io/Takulog/"
+              f"{release_text}"
           )
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
