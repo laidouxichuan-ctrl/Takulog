@@ -8,7 +8,7 @@ on:
       - "index.html"
 
   workflow_dispatch:
-  
+
 jobs:
   release-check:
     runs-on: ubuntu-latest
@@ -26,9 +26,8 @@ jobs:
               html = f.read()
 
           version_match = re.search(
-              r'<!--\s*TAKULOG_VERSION_START\s*-->\s*(.*?)\s*<!--\s*TAKULOG_VERSION_END\s*-->',
-              html,
-              re.S
+              r'<div class="brand-version">\s*(Ver\.\d+\.\d+\.\d+)\s*</div>',
+              html
           )
 
           release_match = re.search(
