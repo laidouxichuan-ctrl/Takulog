@@ -1,0 +1,53 @@
+name: Takulog Release Check
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "index.html"
+
+jobs:
+  release-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read release information
+        shell: python
+        run: |
+          import re
+
+          with open("index.html", "r", encoding="utf-8") as f:
+              html = f.read()
+
+          version_match = re.search(
+              r'<!--\s*TAKULOG_VERSION_START\s*-->\s*(.*?)\s*<!--\s*TAKULOG_VERSION_END\s*-->',
+              html,
+              re.S
+          )
+
+          release_match = re.search(
+              r'<!--\s*TAKULOG_RELEASE_INFO_START\s*-->\s*(.*?)\s*<!--\s*TAKULOG_RELEASE_INFO_END\s*-->',
+              html,
+              re.S
+          )
+
+          if not version_match:
+              raise Exception("バージョン情報が見つかりません")
+
+          if not release_match:
+              raise Exception("リリース情報が見つかりません")
+
+          version = version_match.group(1).strip()
+          release = release_match.group(1).strip()
+
+          print("================================")
+          print("卓ログ リリース情報")
+          print("================================")
+          print(f"Version: {version}")
+          print("")
+          print(release)
+          print("================================")
