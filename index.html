@@ -14,6 +14,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .brand{height:74px;display:flex;align-items:center;gap:12px;padding:0 17px;border-bottom:1px solid var(--line);overflow:hidden}
 .brand-icon{width:41px;height:41px;flex:none;display:block;object-fit:cover;border-radius:8px}
 .brand-name{font-size:19px;font-weight:800;white-space:nowrap}
+.brand-version{font-size:10px;color:#9aa3ad;margin-top:2px;white-space:nowrap}
 .toggle{position:absolute;right:-14px;top:29px;width:28px;height:28px;border:1px solid #d9e1eb;border-radius:50%;background:#fff;color:#596675;box-shadow:0 2px 8px #0001;cursor:pointer}
 .sidebar.collapsed .brand-name,.sidebar.collapsed .label{display:none}
 .sidebar.collapsed .nav button{justify-content:center;padding:0}
@@ -264,7 +265,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div class="brand-name">卓ログ</div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.0.0</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -558,6 +559,18 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
   </section>
 </section>
 
+<!-- TAKULOG_RELEASE_INFO_START -->
+<!--
+Ver.1.0.0
+
+新機能
+・バージョン表示と更新情報管理の基盤を追加
+
+変更・改善
+
+不具合の修正
+-->
+<!-- TAKULOG_RELEASE_INFO_END -->
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
 </main>
