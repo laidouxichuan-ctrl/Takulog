@@ -18,9 +18,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Read release information
+        id: release
         shell: python
         run: |
           import re
+          import os
 
           with open("index.html", "r", encoding="utf-8") as f:
               html = f.read()
@@ -45,6 +47,12 @@ jobs:
           version = version_match.group(1).strip()
           release = release_match.group(1).strip()
 
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"version={version}\n")
+              f.write("release<<RELEASE\n")
+              f.write(release)
+              f.write("\nRELEASE\n")
+
           print("================================")
           print("卓ログ リリース情報")
           print("================================")
@@ -52,3 +60,95 @@ jobs:
           print("")
           print(release)
           print("================================")
+
+      - name: Check Supabase
+        id: check
+        shell: python
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          import os
+          import urllib.request
+          import urllib.parse
+
+          url = os.environ["SUPABASE_URL"].rstrip("/")
+          key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+          version = os.environ["VERSION"]
+
+          encoded_version = urllib.parse.quote(version, safe="")
+
+          request = urllib.request.Request(
+              f"{url}/rest/v1/release_notifications?version=eq.{encoded_version}&select=id",
+              headers={
+                  "apikey": key,
+                  "Authorization": f"Bearer {key}"
+              }
+          )
+
+          try:
+              with urllib.request.urlopen(request) as response:
+                  data = response.read().decode("utf-8")
+          except Exception as e:
+              raise Exception(f"Supabase確認に失敗しました: {e}")
+
+          print(f"Supabase response: {data}")
+
+          if data.strip() == "[]":
+              print("このバージョンは未送信です。")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("already_sent=false\n")
+          else:
+              print("このバージョンは送信済みです。")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("already_sent=true\n")
+
+      - name: Skip already sent release
+        if: steps.check.outputs.already_sent == 'true'
+        run: |
+          echo "このバージョンはすでに通知済みなので、Discord送信を行いません。"
+
+      - name: Release notification
+        if: steps.check.outputs.already_sent == 'false'
+        run: |
+          echo "未送信バージョンです。"
+          echo "ここでDiscord通知処理を実行します。"
+
+      - name: Record release notification
+        if: steps.check.outputs.already_sent == 'false'
+        shell: python
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          import os
+          import json
+          import urllib.request
+
+          url = os.environ["SUPABASE_URL"].rstrip("/")
+          key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+          version = os.environ["VERSION"]
+
+          data = json.dumps({
+              "version": version
+          }).encode("utf-8")
+
+          request = urllib.request.Request(
+              f"{url}/rest/v1/release_notifications",
+              data=data,
+              method="POST",
+              headers={
+                  "apikey": key,
+                  "Authorization": f"Bearer {key}",
+                  "Content-Type": "application/json",
+                  "Prefer": "return=minimal"
+              }
+          )
+
+          try:
+              with urllib.request.urlopen(request) as response:
+                  print(f"Supabase記録成功: HTTP {response.status}")
+          except Exception as e:
+              raise Exception(f"Supabaseへの送信済み記録に失敗しました: {e}")
