@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>卓ログ</title>
+<link rel="icon" href="icon.jpeg?v=1.1.1" type="image/jpeg">
+<link rel="apple-touch-icon" href="icon.jpeg?v=1.1.1">
 <style>
 *{box-sizing:border-box}
 :root{--blue1:#65b4ff;--blue2:#3187ed;--blue3:#1762c7;--line:#e5e9f0;--text:#202630;--muted:#7b8592;--bg:#f7f9fc}
@@ -107,7 +109,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .sidebar{width:min(250px,82vw);max-width:250px;box-shadow:4px 0 18px #24466d18}
 .sidebar.collapsed{width:0;box-shadow:none;overflow:visible}
 .sidebar.collapsed .brand,.sidebar.collapsed .nav,.sidebar.collapsed .account-area{visibility:hidden}
-.sidebar.collapsed .toggle{right:-28px;transform:none}
+.sidebar.collapsed .toggle{right:-28px}
 .sidebar:not(.collapsed) .brand-name,.sidebar:not(.collapsed) .label{display:block}
 .sidebar:not(.collapsed) .nav button{justify-content:flex-start;padding:0 12px}
 .main,.sidebar.collapsed~.main{margin-left:0}
@@ -288,7 +290,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.1.0</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.1.1</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -584,11 +586,10 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 
 <div id="takulog-release-info" style="display:none;">
 変更・改善
-・目次のスマートフォンでの表示を改善しました。
-・デイコードのスマートフォンでの表示を改善しました。
-・デイコードから年表示を削除し、表示スペースを確保しました。
+・サイトのタブに表示されるアイコンを卓ログのアイコンに変更しました。
+・ユーザー名の表示をDiscord内の表示名に変更しました。
 不具合の修正
-・曜日一括入力が画面の枠外にはみ出す問題を修正しました。
+・スマートフォン縦画面で目次の拡大ボタンが縮小するように見える問題を修正しました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
@@ -645,7 +646,7 @@ function discordUserFromSupabase(user){
   const meta=user.user_metadata||{};
   const identity=discordIdentityData(user);
   const discordId=identity.id||meta.provider_id||meta.sub||"";
-  const displayName=identity.global_name||meta.global_name||meta.full_name||"";
+  const displayName=identity.global_name||meta.global_name||identity.username||meta.username||meta.full_name||"";
   const avatarHash=identity.avatar||meta.avatar||"";
   let avatarUrl=identity.avatar_url||meta.avatar_url||"";
 
@@ -657,6 +658,7 @@ function discordUserFromSupabase(user){
   return {
     id:discordId,
     global_name:displayName,
+    username:identity.username||meta.username||"",
     avatar_url:avatarUrl
   };
 }
@@ -1006,7 +1008,7 @@ function currentUserId(){
 }
 function currentUserName(){
   const u=currentDiscordUser();
-  return u ? (u.global_name||"Discordユーザー") : "未ログイン";
+  return u ? (u.global_name||u.username||"Discordユーザー") : "未ログイン";
 }
 
 /* ===== Discordユーザー情報（表示名・アイコン） ===== */
