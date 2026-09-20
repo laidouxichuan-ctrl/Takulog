@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>卓ログ</title>
-<link rel="icon" href="icon.jpeg?v=1.1.1" type="image/jpeg">
-<link rel="apple-touch-icon" href="icon.jpeg?v=1.1.1">
+<link rel="icon" href="icon.jpeg?v=1.1.3" type="image/jpeg">
+<link rel="apple-touch-icon" href="icon.jpeg?v=1.1.3">
 <style>
 *{box-sizing:border-box}
 :root{--blue1:#65b4ff;--blue2:#3187ed;--blue3:#1762c7;--line:#e5e9f0;--text:#202630;--muted:#7b8592;--bg:#f7f9fc}
@@ -290,7 +290,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.1.2</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.1.3</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -588,14 +588,12 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </section>
 
 <div id="takulog-release-info" style="display:none;">
-変更・改善
-・サイトのタブに表示されるアイコンを卓ログのアイコンに変更しました。
+新機能
+・日程確定後に日程を変更できる機能を追加しました。
+・カレンダーから、KPは予定作成済みシナリオ、PL・SKPは参加希望済みシナリオへ正しく移動できるようにしました。
 
-不具合の修正
-・スマートフォン縦画面で目次の拡大ボタンが縮小するように見える問題を修正しました。
-・確定参加者の取得している情報が誤っている問題を修正しました。
-・日程確定画面でデイコード読み込み中にカレンダーが表示されない問題を修正しました。
-・日程確定の2ページ目以降から前の4週間へ戻れるようにしました。
+変更・改善
+・日程確定後の操作ボタンを「ココフォリア」「日程変更」「プレイ済みにする」の構成に変更しました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
@@ -1416,6 +1414,7 @@ function renderScheduleCard(s,mode="home"){
       ${joinButtons}
       ${owner&&s.status==="recruiting"?`<button onclick="editScenarioSchedule('${s.id}')">内容変更</button>`:""}
       ${owner&&s.status==="recruiting"?(isScenarioCapacitySatisfied(s)?`<button class="primary-action" onclick="finalizeScenarioDate('${s.id}')">日程確定</button>`:`<button class="date-finalize-disabled" disabled title="募集人数が条件を満たしていません。">日程確定</button>`):""}
+      ${owner&&s.status==="scheduled"?`<button class="primary-action" onclick="finalizeScenarioDate('${s.id}')">日程変更</button>`:""}
       ${owner&&s.status==="scheduled"?`<button class="primary-action" onclick="markScenarioPlayed('${s.id}')">プレイ済みにする</button>`:""}
     </div>
   </section>`;
@@ -1778,7 +1777,7 @@ async function finalizeScenarioDate(id){
   const s=scenarioSchedules.find(x=>x.id===id);
   if(!s||!isScenarioOwner(s))return;
 
-  if(!isScenarioCapacitySatisfied(s)){
+  if(s.status==="recruiting"&&!isScenarioCapacitySatisfied(s)){
     alert("募集人数が条件を満たしていないため、日程を確定できません。");
     return;
   }
@@ -1796,7 +1795,8 @@ async function finalizeScenarioDate(id){
 
   // 先に画面を表示する。
   // デイコード取得に時間がかかっても、カレンダー自体はすぐ表示する。
-  document.getElementById("dateFinalizeTitle").textContent=`「${s.title}」の日程確定`;
+  document.getElementById("dateFinalizeTitle").textContent=
+    s.status==="scheduled"?`「${s.title}」の日程変更`:`「${s.title}」の日程確定`;
   document.getElementById("dateCalendarView").style.display="block";
   document.getElementById("dateTimeView").style.display="none";
   activateNav(null,"日程確定");
@@ -1824,7 +1824,8 @@ async function finalizeScenarioDate(id){
 async function saveFinalScenarioDate(){
   if(!dateFinalizeScenarioId||!dateFinalizeSelectedDate)return;
   const scenario=scenarioSchedules.find(x=>x.id===dateFinalizeScenarioId);
-  if(!scenario||!isScenarioOwner(scenario)||!isScenarioCapacitySatisfied(scenario)){
+  if(!scenario||!isScenarioOwner(scenario))return;
+  if(scenario.status==="recruiting"&&!isScenarioCapacitySatisfied(scenario)){
     alert("募集人数が条件を満たしていないため、日程を確定できません。");
     return;
   }
@@ -1834,8 +1835,9 @@ async function saveFinalScenarioDate(){
     const {error}=await supabaseClient.from("scenarios").update({final_date:finalDate,status:"scheduled"}).eq("id",dateFinalizeScenarioId);
     if(error)throw error;
     await refreshScenarioData();
+    const changed=scenario.status==="scheduled";
     dateFinalizeScenarioId=null;dateFinalizeSelectedDate="";
-    alert("日程を確定しました。");
+    alert(changed?"日程を変更しました。":"日程を確定しました。");
     scheduleManagePage(document.querySelector('[data-page="予定作成済みシナリオ"]'));
   }catch(e){
     console.error(e);
@@ -2085,9 +2087,20 @@ function openHomeScenarioModal(id){
    <div style="margin-top:14px"><strong>作成者</strong><br>${userIdentityHtml(s.ownerId,s.ownerName)}</div>
    <div style="margin-top:14px"><strong>参加者</strong><br>${participants||"参加者情報なし"}</div>
    ${s.description?`<div style="margin-top:14px"><strong>シナリオ概要</strong><br>${scenarioEscape(s.description)}</div>`:""}
-   <div style="margin-top:16px"><button class="primary-action" onclick="closeHomeScenarioModal();scheduleJoinedPage(document.querySelector('[data-page=&quot;参加希望済みシナリオ&quot;]'))">シナリオ詳細を見る</button></div>
+   <div style="margin-top:16px"><button class="primary-action" onclick="closeHomeScenarioModal();openHomeScenarioDetails('${s.id}')">シナリオ詳細を見る</button></div>
  `;
  document.getElementById("homeScenarioModal").classList.add("open");
+}
+async function openHomeScenarioDetails(id){
+ const s=scenarioSchedules.find(x=>x.id===id);
+ if(!s)return;
+ if(isScenarioOwner(s)){
+   await scheduleManagePage(document.querySelector('[data-page="予定作成済みシナリオ"]'));
+   return;
+ }
+ if(isScenarioParticipant(s)){
+   await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
+ }
 }
 function closeHomeScenarioModal(){document.getElementById("homeScenarioModal").classList.remove("open")}
 function homeScenarioBackdrop(e){if(e.target.id==="homeScenarioModal")closeHomeScenarioModal()}
