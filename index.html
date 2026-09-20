@@ -587,9 +587,10 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <div id="takulog-release-info" style="display:none;">
 変更・改善
 ・サイトのタブに表示されるアイコンを卓ログのアイコンに変更しました。
-・ユーザー名の表示をDiscord内の表示名に変更しました。
+
 不具合の修正
 ・スマートフォン縦画面で目次の拡大ボタンが縮小するように見える問題を修正しました。
+・確定参加者の取得している情報が誤っている問題を修正しました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
@@ -1233,20 +1234,10 @@ function toggleCapacityFields(){
   document.getElementById("scheduleCapacityExact").style.display=range?"none":"block";
 }
 function discordKnownUsers(){
-  const map=new Map();
-  scenarioSchedules.forEach(s=>{
-    if(s.ownerId){
-      const p=userProfileFor(s.ownerId,s.ownerName);
-      map.set(s.ownerId,{id:s.ownerId,name:p.name});
-    }
-    (s.participants||[]).forEach(p0=>{
-      if(p0.userId){
-        const p=userProfileFor(p0.userId,p0.userName);
-        map.set(p0.userId,{id:p0.userId,name:p.name});
-      }
-    });
-  });
-  return [...map.values()].filter(u=>u.id!==currentUserId());
+  // 確定参加者候補は scenarioSchedules ではなく、ログイン済みユーザーを保持する users テーブル由来の userProfiles を基準にする。
+  return [...userProfiles.values()]
+    .filter(p=>p?.discordId && p.discordId!==currentUserId())
+    .map(p=>({id:p.discordId,name:p.name||"Discordユーザー"}));
 }
 function renderConfirmedInputs(){
   const box=document.getElementById("confirmedInputs");
