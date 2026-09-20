@@ -290,7 +290,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.1.1</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.1.2</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -382,7 +382,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
       </div>
 
       <div class="schedule-field full">
-        <label for="scheduleDescription">シナリオ概要（任意）</label>
+        <label for="scheduleDescription">シナリオについて（任意）</label>
         <textarea id="scheduleDescription" placeholder="シナリオ概要など"></textarea>
       </div>
 
@@ -429,7 +429,10 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
   <div id="dateCalendarView">
     <div class="date-picker-head">
       <div class="date-picker-range" id="datePickerRange"></div>
-      <button class="primary-action date-nav-button" onclick="dateFinalizeMove(1)">次の4週間 ›</button>
+      <div class="date-nav-actions">
+        <button class="secondary-button date-nav-button" id="datePrevButton" onclick="dateFinalizeMove(-1)" style="display:none">‹ 前の4週間</button>
+        <button class="primary-action date-nav-button" onclick="dateFinalizeMove(1)">次の4週間 ›</button>
+      </div>
     </div>
     <div class="date-judge-legend">
       <span><i class="date-judge-dot ok3"></i>◎ 緑</span>
@@ -591,6 +594,8 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 不具合の修正
 ・スマートフォン縦画面で目次の拡大ボタンが縮小するように見える問題を修正しました。
 ・確定参加者の取得している情報が誤っている問題を修正しました。
+・日程確定画面でデイコード読み込み中にカレンダーが表示されない問題を修正しました。
+・日程確定の2ページ目以降から前の4週間へ戻れるようにしました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
@@ -1655,17 +1660,22 @@ function calculateScenarioDateJudgement(s,ymd){
 
 function dateFinalizeMove(delta){
   const next=Math.max(0,dateFinalizePageIndex+delta);
-  if(delta>0&&dateFinalizeScenarioId){
+
+  if(next!==dateFinalizePageIndex&&dateFinalizeScenarioId){
     const s=scenarioSchedules.find(x=>x.id===dateFinalizeScenarioId);
     if(s){
       const start=datePageStart(next);
       for(let i=0;i<28;i++){
-        const d=new Date(start);d.setDate(start.getDate()+i);
+        const d=new Date(start);
+        d.setDate(start.getDate()+i);
         const ymd=dateYmd(d);
-        if(!dateFinalizeJudgements[ymd])dateFinalizeJudgements[ymd]=calculateScenarioDateJudgement(s,ymd);
+        if(!dateFinalizeJudgements[ymd]){
+          dateFinalizeJudgements[ymd]=calculateScenarioDateJudgement(s,ymd);
+        }
       }
     }
   }
+
   dateFinalizePageIndex=next;
   renderDateFinalizeCalendar();
 }
@@ -1673,34 +1683,67 @@ function dateFinalizeMove(delta){
 function renderDateFinalizeCalendar(){
   const start=datePageStart(dateFinalizePageIndex),end=new Date(start);
   end.setDate(start.getDate()+27);
-  document.getElementById("datePickerRange").textContent=`${start.getFullYear()}/${start.getMonth()+1}/${start.getDate()} ～ ${end.getFullYear()}/${end.getMonth()+1}/${end.getDate()}`;
-  document.getElementById("datePrevButton").style.display="none";
 
-  const grid=document.getElementById("datePickerGrid");grid.innerHTML="";
+  document.getElementById("datePickerRange").textContent=
+    `${start.getFullYear()}/${start.getMonth()+1}/${start.getDate()} ～ ${end.getFullYear()}/${end.getMonth()+1}/${end.getDate()}`;
+
+  // 2ページ目以降では「前の4週間」を表示する。
+  const prevButton=document.getElementById("datePrevButton");
+  if(prevButton){
+    prevButton.style.display=dateFinalizePageIndex>0?"inline-block":"none";
+  }
+
+  const grid=document.getElementById("datePickerGrid");
+  grid.innerHTML="";
+
   ["日","月","火","水","木","金","土"].forEach(w=>{
-    const x=document.createElement("div");x.className="date-judge-weekday";x.textContent=w;grid.appendChild(x);
+    const x=document.createElement("div");
+    x.className="date-judge-weekday";
+    x.textContent=w;
+    grid.appendChild(x);
   });
 
   const today=dateOnlyToday();
   for(let i=0;i<28;i++){
-    const d=new Date(start);d.setDate(start.getDate()+i);
-    const ymd=dateYmd(d),past=d<today;
-    const j=dateFinalizeJudgements[ymd]||{status:"none",label:"－",reason:"デイコード未取得"};
+    const d=new Date(start);
+    d.setDate(start.getDate()+i);
+
+    const ymd=dateYmd(d);
+    const past=d<today;
+    const j=dateFinalizeJudgements[ymd]||{
+      status:"none",
+      label:"－",
+      reason:"デイコード未取得"
+    };
+
     const cell=document.createElement("button");
     cell.type="button";
     cell.className="date-judge-cell judge-"+j.status;
+
     if(d.getTime()===today.getTime())cell.classList.add("today");
     if(past)cell.classList.add("past");
     if(ymd===dateFinalizeSelectedDate)cell.classList.add("selected");
-    cell.innerHTML=`<span class="date-judge-number">${d.getDate()}</span><span class="date-judge-status">${j.label}</span>`;
+
+    cell.innerHTML=
+      `<span class="date-judge-number">${d.getDate()}</span>`+
+      `<span class="date-judge-status">${j.label}</span>`;
+
     const selectable=!past&&["ok3","ok","maybe"].includes(j.status);
     cell.disabled=!selectable;
-    if(selectable)cell.onclick=()=>selectDateForFinalize(ymd);
+
+    if(selectable){
+      cell.onclick=()=>selectDateForFinalize(ymd);
+    }
+
     cell.title=j.reason||"";
     grid.appendChild(cell);
   }
+
   const help=document.getElementById("dateFinalizeHelp");
-  if(help)help.textContent="日程判定は、予定作成者（KP）＋現在登録されている参加者全員のデイコードから算出します。×・未取得者ありの日は選択できません。";
+  if(help){
+    help.textContent=
+      "日程判定は、予定作成者（KP）＋現在登録されている参加者全員のデイコードから算出します。×・未取得者ありの日は選択できません。";
+  }
 }
 
 function populateFinalTimeSelects(){
@@ -1734,12 +1777,16 @@ function dateFinalizeBackToCalendar(){
 async function finalizeScenarioDate(id){
   const s=scenarioSchedules.find(x=>x.id===id);
   if(!s||!isScenarioOwner(s))return;
+
   if(!isScenarioCapacitySatisfied(s)){
     alert("募集人数が条件を満たしていないため、日程を確定できません。");
     return;
   }
-  if(!currentUserId()){alert("Discordでログインしてください。");return}
-  if(!daycodeReady)await dcLoadFromSupabase();
+
+  if(!currentUserId()){
+    alert("Discordでログインしてください。");
+    return;
+  }
 
   dateFinalizeScenarioId=id;
   dateFinalizePageIndex=0;
@@ -1747,18 +1794,31 @@ async function finalizeScenarioDate(id){
   dateFinalizeTargetUsers=getDateFinalizeTargetUsers(s);
   dateFinalizeJudgements={};
 
-  const start=datePageStart(0);
-  for(let i=0;i<28;i++){
-    const d=new Date(start);d.setDate(start.getDate()+i);
-    const ymd=dateYmd(d);
-    dateFinalizeJudgements[ymd]=calculateScenarioDateJudgement(s,ymd);
-  }
-
+  // 先に画面を表示する。
+  // デイコード取得に時間がかかっても、カレンダー自体はすぐ表示する。
   document.getElementById("dateFinalizeTitle").textContent=`「${s.title}」の日程確定`;
   document.getElementById("dateCalendarView").style.display="block";
   document.getElementById("dateTimeView").style.display="none";
   activateNav(null,"日程確定");
   showOnlySchedule("scheduleDateFinalizePage");
+
+  const help=document.getElementById("dateFinalizeHelp");
+  if(help)help.textContent="デイコードを読み込んでいます……";
+  renderDateFinalizeCalendar();
+
+  if(!daycodeReady){
+    await dcLoadFromSupabase();
+  }
+
+  // デイコード取得後に、最初の4週間の判定を作り直す。
+  const start=datePageStart(0);
+  for(let i=0;i<28;i++){
+    const d=new Date(start);
+    d.setDate(start.getDate()+i);
+    const ymd=dateYmd(d);
+    dateFinalizeJudgements[ymd]=calculateScenarioDateJudgement(s,ymd);
+  }
+
   renderDateFinalizeCalendar();
 }
 async function saveFinalScenarioDate(){
