@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>卓ログ</title>
-<link rel="icon" href="icon.jpeg?v=1.1.3" type="image/jpeg">
-<link rel="apple-touch-icon" href="icon.jpeg?v=1.1.3">
+<link rel="icon" href="icon.jpeg?v=1.1.4" type="image/jpeg">
+<link rel="apple-touch-icon" href="icon.jpeg?v=1.1.4">
 <style>
 *{box-sizing:border-box}
 :root{--blue1:#65b4ff;--blue2:#3187ed;--blue3:#1762c7;--line:#e5e9f0;--text:#202630;--muted:#7b8592;--bg:#f7f9fc}
@@ -290,7 +290,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.1.3</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.1.4</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -382,7 +382,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
       </div>
 
       <div class="schedule-field full">
-        <label for="scheduleDescription">シナリオについて（任意）</label>
+        <label for="scheduleDescription">シナリオ概要（任意）</label>
         <textarea id="scheduleDescription" placeholder="シナリオ概要など"></textarea>
       </div>
 
@@ -588,12 +588,10 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </section>
 
 <div id="takulog-release-info" style="display:none;">
-新機能
-・日程確定後に日程を変更できる機能を追加しました。
-・カレンダーから、KPは予定作成済みシナリオ、PL・SKPは参加希望済みシナリオへ正しく移動できるようにしました。
-
 変更・改善
-・日程確定後の操作ボタンを「ココフォリア」「日程変更」「プレイ済みにする」の構成に変更しました。
+・開催日時の選択画面では、選択済みの日付を省略して時間のみ表示するよう変更しました。
+・シナリオの日時表示では、日付と時間の両方を表示するよう変更しました。
+・シナリオ予定作成の「シナリオについて（任意）」を「シナリオ概要（任意）」に変更しました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
@@ -1400,7 +1398,7 @@ function renderScheduleCard(s,mode="home"){
       <div>
         <h3>${scenarioEscape(s.title)}</h3>
         <div class="schedule-meta">${scenarioEscape(s.system)}　｜　PL定員 ${scheduleRangeText(s)}　｜　PL残り募集人数 ${scheduleRemaining(s)}人${s.skpRecruit?"　｜　SKP募集中":""}</div>
-        ${s.finalDate?`<div class="schedule-meta">開催日時：${scenarioEscape(s.finalDate)}</div>`:""}
+        ${s.finalDate?`<div class="schedule-meta">開催日時：${scenarioEscape(formatScenarioFinalDate(s.finalDate))}</div>`:""}
       </div>
       <div class="schedule-meta">${userIdentityHtml(s.ownerId,owner?currentUserName():s.ownerName,true)}${owner?"（作成者）":"（KP）"}</div>
     </div>
@@ -1628,6 +1626,12 @@ function datePageStart(index){
 }
 function dateYmd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function dateJa(d){return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}（${["日","月","火","水","木","金","土"][d.getDay()]}）`}
+function formatScenarioFinalDate(value){
+  if(!value)return "";
+  const d=new Date(String(value).replace(" ","T"));
+  if(isNaN(d.getTime()))return String(value);
+  return `${d.getMonth()+1}/${d.getDate()}（${["日","月","火","水","木","金","土"][d.getDay()]}） ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}〜`;
+}
 
 function getDateFinalizeTargetUsers(s){
   const map=new Map();
@@ -1763,7 +1767,7 @@ function selectDateForFinalize(ymd){
   if(!j||!["ok3","ok","maybe"].includes(j.status))return;
   dateFinalizeSelectedDate=ymd;
   const d=new Date(ymd+"T00:00:00");
-  document.getElementById("selectedDateLabel").textContent=dateJa(d)+" の開催時刻（総合判定："+j.label+"）";
+  document.getElementById("selectedDateLabel").textContent="開催時刻（総合判定："+j.label+"）";
   document.getElementById("dateCalendarView").style.display="none";
   document.getElementById("dateTimeView").style.display="block";
   populateFinalTimeSelects();
@@ -2079,7 +2083,7 @@ function homeScenarioListForDate(ymd){
 function openHomeScenarioModal(id){
  const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
  const d=s.finalDate?new Date(s.finalDate.replace(" ","T")):null;
- const dateText=d&&!isNaN(d.getTime())?dateJa(d):"開催日時未設定";
+ const dateText=d&&!isNaN(d.getTime())?formatScenarioFinalDate(s.finalDate):"開催日時未設定";
  const participants=(s.participants||[]).map(p=>`<div style="padding:5px 0">${userIdentityHtml(p.userId,p.userName)}（${(p.role||"pl")==="skp"?"SKP":"PL"}）</div>`).join("");
  document.getElementById("homeScenarioModalTitle").textContent=s.title;
  document.getElementById("homeScenarioModalBody").innerHTML=`
