@@ -290,7 +290,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.2.1</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.2.2</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -502,11 +502,11 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <section class="card palette-page" id="chatPaletteOutputPage" style="display:none">
   <div class="palette-intro">
     <h2 class="section-title">チャットパレット出力</h2>
-    <p>いあきゃらからコピーしたチャットパレットを読み取り、卓ログで使用するチャットパレットを生成します。</p>
+    <p>いあきゃらから出力したチャットパレットを読み取り、卓ログで使用するチャットパレットを生成します。</p>
   </div>
   <div class="field-card">
     <label for="officialInput">① いあきゃらのチャットパレット</label>
-    <textarea id="officialInput" style="width:100%;min-height:220px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical" placeholder="いあきゃらからコピーして貼り付け"></textarea>
+    <textarea id="officialInput" style="width:100%;min-height:220px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical" placeholder="全ての技能を出力、CCBを選択してチャパレ出力を行いここに貼り付けてください。"></textarea>
     <button class="primary palette-button" id="officialRead" onclick="officialReadSkills()">読み取り</button>
     <button class="copy-button" style="display:inline-block;margin:8px 0 0 0" onclick="officialClear()">クリア</button>
     <p id="officialStatus"></p>
@@ -566,13 +566,15 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 
 <section class="card daycode-page" id="daycodePage" style="display:none">
   <h2 class="section-title daycode-title">デイコード</h2>
-  <p class="daycode-note">開催可能日の入力・確認</p>
   <section class="panel toolbar">
     <label>入力ユーザー：<span id="dc-user" class="dc-user-name">未ログイン</span></label>
     <button class="primary-action palette-button" onclick="dcOpenEditor()">自分の日程を入力</button>
     <button onclick="dcAddNextMonth()">翌月分を追加</button>
     <span id="dcStatus" class="dcStatus"></span>
   </section>
+  <div class="daycode-note" style="margin:0 0 14px;padding:10px 12px;border:1px solid #dbe2eb;background:#f7f9fc;border-radius:8px;line-height:1.7;font-size:13px;">
+    ○：一日中いつでも暇　｜　△：時間帯が限られる（夜だけ、午前だけなど）　｜　×：一日中暇な時間がない
+  </div>
   <div class="table-wrap"><table id="dc-table"></table></div>
   <section id="dc-editor" class="panel editor">
     <h2 id="dc-editorTitle"></h2>
@@ -588,10 +590,10 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </section>
 
 <div id="takulog-release-info" style="display:none;">
-Ver.1.2.1
+Ver.1.2.2
 変更・修正
-・Discordの表示名を卓ログ上の表示名として使用するよう変更しました。
-・一部表示を変更・修正しました
+・Discordの表示名を卓ログ上のユーザー名として使用するよう変更しました。
+・一部表示を追加、変更、修正しました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
