@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>卓ログ</title>
-<link rel="icon" href="icon.jpeg?v=1.1.4" type="image/jpeg">
-<link rel="apple-touch-icon" href="icon.jpeg?v=1.1.4">
+<link rel="icon" href="icon.jpeg?v=1.2.0" type="image/jpeg">
+<link rel="apple-touch-icon" href="icon.jpeg?v=1.2.0">
 <style>
 *{box-sizing:border-box}
 :root{--blue1:#65b4ff;--blue2:#3187ed;--blue3:#1762c7;--line:#e5e9f0;--text:#202630;--muted:#7b8592;--bg:#f7f9fc}
@@ -290,7 +290,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.1.4</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.2.0</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -588,6 +588,14 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </section>
 
 <div id="takulog-release-info" style="display:none;">
+Ver.1.2.0
+変更・改善
+・シナリオの日程確定時に、開催日時を日本時間として正確に保存するよう変更しました。
+・Discordの日程管理通知で利用する開催日時として final_at を追加しました。
+・従来の final_date は互換性維持のため残しています。
+・Ver.1.1.4までの開催日時表示・日程確定画面の仕様は維持しています。
+
+Ver.1.1.4
 変更・改善
 ・開催日時の選択画面では、選択済みの日付を省略して時間のみ表示するよう変更しました。
 ・シナリオの日時表示では、日付と時間の両方を表示するよう変更しました。
@@ -1117,7 +1125,7 @@ function dbScenarioToLocal(row,participants){
     skpRecruit:!!row.skp_recruit,
     createdAt:row.created_at ? new Date(row.created_at).getTime() : Date.now(),
     status:row.status||"recruiting",
-    finalDate:row.final_date||"",
+    finalDate:row.final_at||row.final_date||"",
     participants:(participants||[]).map(p=>({
       userId:p.user_id,
       userName:p.user_name,
@@ -1302,7 +1310,8 @@ async function saveScenarioSchedule(){
     cocofolia_url:cocofolia,
     skp_recruit:document.getElementById("scheduleSkpRecruit").value==="yes",
     status:"recruiting",
-    final_date:null
+    final_date:null,
+    final_at:null
   };
 
   try{
@@ -1835,8 +1844,14 @@ async function saveFinalScenarioDate(){
   }
   const hour=document.getElementById("finalHour").value,minute=document.getElementById("finalMinute").value;
   const finalDate=`${dateFinalizeSelectedDate} ${hour}:${minute}`;
+  // 日本時間(JST)として保存し、DB側の final_at(timestamptz) で正確な開催日時を管理する。
+  const finalAt=new Date(`${dateFinalizeSelectedDate}T${hour}:${minute}:00+09:00`).toISOString();
   try{
-    const {error}=await supabaseClient.from("scenarios").update({final_date:finalDate,status:"scheduled"}).eq("id",dateFinalizeScenarioId);
+    const {error}=await supabaseClient.from("scenarios").update({
+      final_date:finalDate,
+      final_at:finalAt,
+      status:"scheduled"
+    }).eq("id",dateFinalizeScenarioId);
     if(error)throw error;
     await refreshScenarioData();
     const changed=scenario.status==="scheduled";
