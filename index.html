@@ -656,7 +656,7 @@ function discordUserFromSupabase(user){
   const meta=user.user_metadata||{};
   const identity=discordIdentityData(user);
   const discordId=identity.id||meta.provider_id||meta.sub||"";
-  const displayName=identity.global_name||meta.global_name||identity.username||meta.username||meta.full_name||"";
+  const displayName=identity.global_name||meta.global_name||identity.custom_claims?.global_name||meta.custom_claims?.global_name||identity.username||meta.username||meta.full_name||"";
   const avatarHash=identity.avatar||meta.avatar||"";
   let avatarUrl=identity.avatar_url||meta.avatar_url||"";
 
