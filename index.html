@@ -290,7 +290,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.2.3</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.3.0</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -314,6 +314,11 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <section class="card calendar-card">
 <div class="calendar-head"><h2 class="section-title">カレンダー</h2></div>
 <div class="calendar" id="calendar"></div>
+</section>
+
+<section class="card" id="homeTodayScenarios" style="padding:18px;margin-bottom:22px">
+<h2 class="section-title">本日開催されるシナリオ</h2>
+<div id="homeTodayScenarioList"><div class="empty">本日開催されるシナリオはありません。</div></div>
 </section>
 
 <section class="card recruit" id="homeRecruit">
@@ -590,11 +595,9 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </section>
 
 <div id="takulog-release-info" style="display:none;">
-Ver.1.2.3
-変更・改善
-・アップデート通知の内容が正しく通知されない問題を修正しました。
-・Discordの表示名を卓ログ上のユーザー名として使用するよう変更しました。
-・一部の表示を変更・修正しました。
+Ver.1.3.0
+新機能
+・ホーム画面に、開催当日のシナリオを全員向けに表示する機能を追加しました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
@@ -784,9 +787,11 @@ function home(btn){
   document.getElementById("iacharaManagePage").style.display="none";
   document.getElementById("cocofoliaManagePage").style.display="none";
   document.getElementById("homeRecruit").style.display="block";
+  document.getElementById("homeTodayScenarios").style.display="block";
   document.querySelector(".create").style.display="block";
   document.querySelector(".calendar-card").style.display="block";
   renderHomeRecruit();
+  renderHomeTodayScenarios();
   buildCalendar();
 }
 function placeholder(btn){
@@ -1180,6 +1185,7 @@ function showOnlySchedule(id){
   const ids=["scheduleCreatePage","scheduleManagePage","scheduleApplyPage","scheduleJoinedPage","schedulePlayedPage","iacharaManagePage","cocofoliaManagePage","chatPaletteOutputPage","palettePage","daycodePage","scheduleDateFinalizePage"];
   ids.forEach(x=>{const e=document.getElementById(x);if(e)e.style.display=(x===id?"block":"none")});
   document.getElementById("homeRecruit").style.display="none";
+  document.getElementById("homeTodayScenarios").style.display="none";
   document.querySelector(".create").style.display="none";
   document.querySelector(".calendar-card").style.display="none";
 }
@@ -1426,6 +1432,32 @@ function renderHomeRecruit(){
   const list=scenarioSchedules.filter(s=>s.status==="recruiting"&&!isScenarioOwner(s)&&!isScenarioParticipant(s));
   box.innerHTML=`<h2 class="section-title">参加者募集中シナリオ</h2>`+
     (list.length?list.map(s=>renderScheduleCard(s)).join(""):'<div class="empty">現在、参加者を募集中のシナリオはありません。</div>');
+}
+function jstDateKey(value){
+  const d=value instanceof Date?value:new Date(value);
+  if(Number.isNaN(d.getTime()))return "";
+  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);
+  const part=type=>parts.find(p=>p.type===type)?.value||"";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+function renderHomeTodayScenarios(){
+  const box=document.getElementById("homeTodayScenarioList");
+  if(!box)return;
+  const today=jstDateKey(new Date());
+  const list=scenarioSchedules
+    .filter(s=>s.status==="scheduled"&&s.finalDate&&jstDateKey(s.finalDate)===today)
+    .sort((a,b)=>new Date(a.finalDate)-new Date(b.finalDate));
+  if(!list.length){
+    box.innerHTML='<div class="empty">本日開催されるシナリオはありません。</div>';
+    return;
+  }
+  box.innerHTML=list.map(s=>{
+    const time=new Intl.DateTimeFormat("ja-JP",{timeZone:"Asia/Tokyo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(s.finalDate));
+    return `<div class="schedule-card" style="margin:0 0 10px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#fff;">
+      <div class="schedule-card-head"><div><h3>${scenarioEscape(s.title)}</h3><div class="schedule-meta">開催時刻：${scenarioEscape(time)}〜</div></div><div class="schedule-meta">KP：${userIdentityHtml(s.ownerId,s.ownerName,true)}</div></div>
+      ${s.description?`<div class="schedule-description">${scenarioEscape(s.description)}</div>`:""}
+    </div>`;
+  }).join("");
 }
 function renderScheduleManage(){
   const box=document.getElementById("scheduleManageList");
@@ -1865,6 +1897,7 @@ function cancelScheduleForm(){
 }
 function renderAllScenarioData(){
   renderHomeRecruit();
+  renderHomeTodayScenarios();
   buildCalendar();
 }
 
