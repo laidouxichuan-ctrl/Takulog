@@ -290,7 +290,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.3.1</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.3.2</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -595,9 +595,10 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </section>
 
 <div id="takulog-release-info" style="display:none;">
-Ver.1.3.1
-不具合の修正
-・芸術など、括弧付きの技能名がチャットパレット生成時に正しく参照されない問題を修正しました。
+Ver.1.3.2
+変更・改善
+・ロスト設定や参加取り消しなど、元に戻しにくい操作の確認を2段階にしました。
+・PL本人も、参加希望済みのシナリオから参加を取り消せるようにしました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
@@ -932,7 +933,10 @@ async function addIacharaCharacter(){
   }catch(e){console.error(e);alert("キャラクターの追加に失敗しました。");}
 }
 async function markCharacterLost(id){
-  if(!confirm("このキャラクターをロスト扱いにしますか？\n以後、参加希望時の選択肢には表示されません。"))return;
+  const character=managedIacharaCharacters.find(x=>x.id===id);
+  if(!character||character.is_lost)return;
+  if(!confirm(`「${character.character_name||"このキャラクター"}」をロスト扱いにしますか？\\n以後、参加希望時の選択肢には表示されません。`))return;
+  if(!confirm("ロスト設定は元に戻せません。本当に実行しますか？"))return;
   try{
     const {error}=await supabaseClient.from("user_characters").update({is_lost:true,updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUserId());
     if(error)throw error;
@@ -954,7 +958,10 @@ async function addCocofoliaRoom(){
   }catch(e){console.error(e);alert("ココフォリアルームの追加に失敗しました。");}
 }
 async function deleteCocofoliaRoom(id){
-  if(!confirm("このココフォリアルームを削除しますか？"))return;
+  const room=managedCocofoliaRooms.find(x=>x.id===id);
+  if(!room)return;
+  if(!confirm(`ココフォリアルーム「${room.room_name||room.room_url||"名称未設定"}」を削除しますか？`))return;
+  if(!confirm("削除したルーム情報は元に戻せません。削除を確定しますか？"))return;
   try{
     const {error}=await supabaseClient.from("user_cocofolia_rooms").delete().eq("id",id).eq("user_id",currentUserId());
     if(error)throw error;
@@ -1390,8 +1397,8 @@ function renderScheduleCard(s,mode="home"){
       <span class="participant-name">${userIdentityHtml(p.userId,p.userName,true)}</span>
       ${p.characterName?`<span class="char">（${scenarioEscape(p.characterName)}）</span>`:""}
       ${p.iacharaUrl?`<a class="schedule-link" href="${scenarioEscape(p.iacharaUrl)}" target="_blank" rel="noopener">いあきゃら</a>`:""}
-      ${own&&s.status!=="completed"&&isSkp?`<button onclick="cancelOwnSkp('${s.id}')">希望を取り消す</button>`:""}
-      ${own&&s.status!=="completed"&&!isSkp?`<button onclick="openScheduleApply('${s.id}',true)">内容変更</button>`:""}
+      ${own&&s.status!=="completed"&&isSkp?`<button onclick="cancelOwnParticipation('${s.id}')">参加を取り消す</button>`:""}
+      ${own&&s.status!=="completed"&&!isSkp?`<button onclick="openScheduleApply('${s.id}',true)">内容変更</button><button class="danger-action" onclick="cancelOwnParticipation('${s.id}')">参加を取り消す</button>`:""}
       ${owner&&s.status!=="completed"?`<button class="danger-action" onclick="cancelScenarioParticipant('${s.id}','${p.userId}')">参加取り消し</button>`:""}
     </div>`;
   }).join("");
@@ -1555,11 +1562,12 @@ async function joinAsSkp(id){
     alert("SKP参加希望の保存に失敗しました。Supabaseの権限設定を確認してください。");
   }
 }
-async function cancelOwnSkp(id){
-  const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
+async function cancelOwnParticipation(id){
+  const s=scenarioSchedules.find(x=>x.id===id);if(!s||s.status==="completed")return;
   const p=participantOf(s);
-  if(!p||(p.role||"pl")!=="skp")return;
-  if(!confirm("SKPとしての参加希望を取り消しますか？"))return;
+  if(!p)return;
+  if(!confirm(`「${s.title}」への参加を取り消しますか？`))return;
+  if(!confirm("参加情報は削除されます。取り消しを確定しますか？"))return;
   try{
     const {error}=await supabaseClient.from("scenario_participants").delete().eq("scenario_id",id).eq("user_id",currentUserId());
     if(error)throw error;
@@ -1567,7 +1575,7 @@ async function cancelOwnSkp(id){
     await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
   }catch(e){
     console.error(e);
-    alert("SKP参加希望の取り消しに失敗しました。");
+    alert("参加の取り消しに失敗しました。");
   }
 }
 async function markScenarioPlayed(id){
@@ -1603,6 +1611,7 @@ async function cancelScenarioParticipant(id,userId){
   if(!isScenarioOwner(s)){alert("参加の取り消しは予定作成者のみ行えます。");return}
   const p=s.participants.find(x=>x.userId===userId);if(!p)return;
   if(!confirm(`${p.userName}さんの参加を取り消しますか？`))return;
+  if(!confirm("参加情報が削除されます。取り消しを確定しますか？"))return;
   try{
     const {error}=await supabaseClient.from("scenario_participants").delete().eq("scenario_id",id).eq("user_id",userId);
     if(error)throw error;
