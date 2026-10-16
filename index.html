@@ -285,12 +285,39 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
   .form-actions button{width:100%}
 }
 
+
+/* ===== 卓ログ共通ダイアログ ===== */
+.takulog-dialog-backdrop{display:none;position:fixed;inset:0;z-index:1000;padding:18px;background:rgba(20,32,48,.58);place-items:center}
+.takulog-dialog-backdrop.open{display:grid}
+.takulog-dialog{width:min(460px,100%);max-height:min(88vh,720px);overflow:auto;background:#fff;color:#202630;border:1px solid #e5e9f0;border-radius:16px;box-shadow:0 24px 80px #0004}
+.takulog-dialog-head{padding:20px 22px 0;font-size:18px;font-weight:800}
+.takulog-dialog-message{padding:12px 22px 22px;font-size:14px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.takulog-dialog-input-wrap{padding:0 22px 18px}
+.takulog-dialog-input{display:block;width:100%;min-height:44px;border:1px solid #d5dde7;border-radius:9px;padding:10px 12px;font:inherit;color:#202630;background:#fff}
+.takulog-dialog-actions{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px 20px}
+.takulog-dialog-button{min-height:42px;min-width:108px;border:0;border-radius:9px;padding:10px 16px;font:inherit;font-weight:750;cursor:pointer}
+.takulog-dialog-cancel{order:1;background:#dc2626;color:#fff}
+.takulog-dialog-confirm{order:2;background:#2563eb;color:#fff}
+.takulog-dialog-ok{order:2;background:#2563eb;color:#fff}
+.takulog-dialog-final{background:#101114;color:#fff;border:1px solid #303238;box-shadow:0 26px 90px #0009}
+.takulog-dialog-final .takulog-dialog-head{color:#fff}
+.takulog-dialog-final .takulog-dialog-message{color:#e5e7eb}
+.takulog-dialog-final .takulog-dialog-cancel{background:#fff;color:#111827}
+.takulog-dialog-final .takulog-dialog-confirm{background:#dc2626;color:#fff}
+.takulog-dialog-final .takulog-dialog-input{border-color:#444;background:#202127;color:#fff}
+.takulog-dialog-button:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
+@media(max-width:480px){.takulog-dialog-backdrop{padding:12px}.takulog-dialog-head{padding:18px 18px 0}.takulog-dialog-message{padding:10px 18px 18px}.takulog-dialog-actions{padding:12px 16px 16px}.takulog-dialog-button{flex:1;min-width:0}}
+/* 操作ボタンの意味を見た目でも統一 */
+button.action-confirm{background:#2563eb!important;border:1px solid #2563eb!important;color:#fff!important;box-shadow:none!important}
+button.action-cancel{background:#dc2626!important;border:1px solid #dc2626!important;color:#fff!important;box-shadow:none!important}
+button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.06)}
+
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.3.2</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.3.3</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -595,10 +622,12 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 </section>
 
 <div id="takulog-release-info" style="display:none;">
-Ver.1.3.2
+Ver.1.3.3
+新機能
+・ブラウザ標準ダイアログに代わる卓ログ共通の確認・入力・通知画面を追加しました。
 変更・改善
-・ロスト設定や参加取り消しなど、元に戻しにくい操作の確認を2段階にしました。
-・PL本人も、参加希望済みのシナリオから参加を取り消せるようにしました。
+・確定系統とキャンセル系統のボタン配色を統一し、操作の組み合わせではキャンセルを左、確定を右に配置しました。
+・ロスト設定、ルーム削除、参加取り消しの最終確認を黒背景の専用ポップアップにしました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
@@ -620,6 +649,16 @@ Ver.1.3.2
 <div class="modal-body" id="modalBody"></div>
 <div class="modal-foot"><button onclick="closeLegal()">閉じる</button></div>
 </div>
+</div>
+
+
+<div id="takulogDialogBackdrop" class="takulog-dialog-backdrop" role="presentation" aria-hidden="true">
+  <section id="takulogDialog" class="takulog-dialog" role="dialog" aria-modal="true" aria-labelledby="takulogDialogTitle" aria-describedby="takulogDialogMessage">
+    <div id="takulogDialogTitle" class="takulog-dialog-head">確認</div>
+    <div id="takulogDialogMessage" class="takulog-dialog-message"></div>
+    <div id="takulogDialogInputWrap" class="takulog-dialog-input-wrap" hidden><input id="takulogDialogInput" class="takulog-dialog-input" type="text"></div>
+    <div id="takulogDialogActions" class="takulog-dialog-actions"></div>
+  </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -717,7 +756,7 @@ async function discordLogin(){
   });
   if(error){
     console.error(error);
-    alert('Discordログインに失敗しました。SupabaseのDiscord認証設定とRedirect URLを確認してください。');
+    showNotice('Discordログインに失敗しました。SupabaseのDiscord認証設定とRedirect URLを確認してください。');
   }
 }
 
@@ -819,7 +858,7 @@ function placeholder(btn){
   document.getElementById("homeRecruit").style.display="block";
   document.querySelector(".create").style.display="block";
   document.querySelector(".calendar-card").style.display="block";
-  alert(btn.dataset.page+" は現在、機能を実装していません。\nページ構成のみ用意しています。");
+  showNotice(btn.dataset.page+" は現在、機能を実装していません。\nページ構成のみ用意しています。");
 }
 
 /* ===== ユーザー別 いあきゃら / ココフォリア管理 ===== */
@@ -850,7 +889,7 @@ async function refreshManagedData(){
   }catch(e){
     console.error(e);
     managedDataReady=false;
-    alert("管理データの読み込みに失敗しました。Supabaseのテーブルと権限設定を確認してください。");
+    showNotice("管理データの読み込みに失敗しました。Supabaseのテーブルと権限設定を確認してください。");
   }
 }
 
@@ -898,7 +937,7 @@ function queueCharacterSave(id,input){
       if(error)throw error;
       const item=managedIacharaCharacters.find(x=>x.id===id);if(item){item.character_name=name;item.iachara_url=url;}
       refreshIacharaDropdown();
-    }catch(e){console.error(e);alert("キャラクター情報の保存に失敗しました。");}
+    }catch(e){console.error(e);showNotice("キャラクター情報の保存に失敗しました。");}
   },500);
   characterSaveTimers.set(id,timer);
 }
@@ -914,13 +953,13 @@ function queueRoomSave(id,input){
       if(error)throw error;
       const item=managedCocofoliaRooms.find(x=>x.id===id);if(item){item.room_name=name;item.room_url=url;}
       refreshCocofoliaDropdown();
-    }catch(e){console.error(e);alert("ココフォリアルームの保存に失敗しました。");}
+    }catch(e){console.error(e);showNotice("ココフォリアルームの保存に失敗しました。");}
   },500);
   roomSaveTimers.set(id,timer);
 }
 
 async function addIacharaCharacter(){
-  if(!currentUserId()){alert("Discordでログインしてください。");return}
+  if(!currentUserId()){showNotice("Discordでログインしてください。");return}
   try{
     const {data,error}=await supabaseClient.from("user_characters").insert({user_id:currentUserId(),character_name:"",iachara_url:null,is_lost:false}).select("*").single();
     if(error)throw error;
@@ -930,22 +969,22 @@ async function addIacharaCharacter(){
     const row=rows[rows.length-1];
     row?.querySelector("input")?.focus();
     refreshIacharaDropdown();
-  }catch(e){console.error(e);alert("キャラクターの追加に失敗しました。");}
+  }catch(e){console.error(e);showNotice("キャラクターの追加に失敗しました。");}
 }
 async function markCharacterLost(id){
   const character=managedIacharaCharacters.find(x=>x.id===id);
   if(!character||character.is_lost)return;
-  if(!confirm(`「${character.character_name||"このキャラクター"}」をロスト扱いにしますか？\\n以後、参加希望時の選択肢には表示されません。`))return;
-  if(!confirm("ロスト設定は元に戻せません。本当に実行しますか？"))return;
+  if(!await showConfirm(`「${character.character_name||"このキャラクター"}」をロスト扱いにしますか？\\n以後、参加希望時の選択肢には表示されません。`))return;
+  if(!await showFinalConfirm("ロスト設定は元に戻せません。本当に実行しますか？"))return;
   try{
     const {error}=await supabaseClient.from("user_characters").update({is_lost:true,updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUserId());
     if(error)throw error;
     const item=managedIacharaCharacters.find(x=>x.id===id);if(item)item.is_lost=true;
     renderIacharaManage();refreshIacharaDropdown();
-  }catch(e){console.error(e);alert("ロスト設定に失敗しました。");}
+  }catch(e){console.error(e);showNotice("ロスト設定に失敗しました。");}
 }
 async function addCocofoliaRoom(){
-  if(!currentUserId()){alert("Discordでログインしてください。");return}
+  if(!currentUserId()){showNotice("Discordでログインしてください。");return}
   try{
     const {data,error}=await supabaseClient.from("user_cocofolia_rooms").insert({user_id:currentUserId(),room_name:"",room_url:""}).select("*").single();
     if(error)throw error;
@@ -955,19 +994,19 @@ async function addCocofoliaRoom(){
     const row=rows[rows.length-1];
     row?.querySelector("input")?.focus();
     refreshCocofoliaDropdown();
-  }catch(e){console.error(e);alert("ココフォリアルームの追加に失敗しました。");}
+  }catch(e){console.error(e);showNotice("ココフォリアルームの追加に失敗しました。");}
 }
 async function deleteCocofoliaRoom(id){
   const room=managedCocofoliaRooms.find(x=>x.id===id);
   if(!room)return;
-  if(!confirm(`ココフォリアルーム「${room.room_name||room.room_url||"名称未設定"}」を削除しますか？`))return;
-  if(!confirm("削除したルーム情報は元に戻せません。削除を確定しますか？"))return;
+  if(!await showConfirm(`ココフォリアルーム「${room.room_name||room.room_url||"名称未設定"}」を削除しますか？`))return;
+  if(!await showFinalConfirm("削除したルーム情報は元に戻せません。削除を確定しますか？"))return;
   try{
     const {error}=await supabaseClient.from("user_cocofolia_rooms").delete().eq("id",id).eq("user_id",currentUserId());
     if(error)throw error;
     managedCocofoliaRooms=managedCocofoliaRooms.filter(x=>x.id!==id);
     renderCocofoliaManage();refreshCocofoliaDropdown();
-  }catch(e){console.error(e);alert("ココフォリアルームの削除に失敗しました。");}
+  }catch(e){console.error(e);showNotice("ココフォリアルームの削除に失敗しました。");}
 }
 
 function refreshIacharaDropdown(selectedValue){
@@ -1180,7 +1219,7 @@ async function refreshScenarioData(){
   }catch(e){
     console.error(e);
     scenarioReady=false;
-    alert("シナリオデータの読み込みに失敗しました。Supabaseのテーブルと権限設定を確認してください。");
+    showNotice("シナリオデータの読み込みに失敗しました。Supabaseのテーブルと権限設定を確認してください。");
   }
 }
 
@@ -1290,7 +1329,7 @@ function collectConfirmed(){
 }
 
 async function saveScenarioSchedule(){
-  if(!currentUserId()){alert("予定を作成するにはDiscordでログインしてください。");return}
+  if(!currentUserId()){showNotice("予定を作成するにはDiscordでログインしてください。");return}
   const title=document.getElementById("scheduleTitle").value.trim();
   const system=scenarioSystemValue();
   const mode=document.getElementById("scheduleCapacityMode").value;
@@ -1298,12 +1337,12 @@ async function saveScenarioSchedule(){
   const max=Number(document.getElementById("scheduleCapacityMax").value);
   const exact=Number(document.getElementById("scheduleCapacityExact").value);
   const cocofolia=document.getElementById("scheduleCocofolia").value.trim();
-  if(!title||!system||!cocofolia){alert("シナリオ名・システム・ココフォリアURLを入力してください。");return}
-  if(mode==="range" && (!min||!max||min<1||max<min)){alert("定員の下限・上限を正しく入力してください。");return}
-  if(mode==="exact" && (!exact||exact<1)){alert("定員を正しく入力してください。");return}
+  if(!title||!system||!cocofolia){showNotice("シナリオ名・システム・ココフォリアURLを入力してください。");return}
+  if(mode==="range" && (!min||!max||min<1||max<min)){showNotice("定員の下限・上限を正しく入力してください。");return}
+  if(mode==="exact" && (!exact||exact<1)){showNotice("定員を正しく入力してください。");return}
   const confirmed=collectConfirmed();
   const capacity=mode==="range"?max:exact;
-  if(confirmed.length>capacity){alert("確定参加者の人数が定員を超えています。");return}
+  if(confirmed.length>capacity){showNotice("確定参加者の人数が定員を超えています。");return}
 
   const payload={
     owner_id:currentUserId(),
@@ -1351,8 +1390,8 @@ async function saveScenarioSchedule(){
     }
 
     const selectedRoomId=document.getElementById("scheduleCocofoliaRoom").value;
-    if(!selectedRoomId && cocofolia && confirm("このココフォリアURLをココフォリア管理に保存しますか？")){
-      const suggestedName=prompt("管理用のルーム名を入力してください。\n※この名前はURLを呼び出すためだけに使用します。","");
+    if(!selectedRoomId && cocofolia && await showConfirm("このココフォリアURLをココフォリア管理に保存しますか？")){
+      const suggestedName=await showPrompt("管理用のルーム名を入力してください。\n※この名前はURLを呼び出すためだけに使用します。","");
       if(suggestedName!==null && suggestedName.trim()){
         const {data:roomData,error:roomError}=await supabaseClient.from("user_cocofolia_rooms").insert({user_id:currentUserId(),room_name:suggestedName.trim(),room_url:cocofolia}).select("*").single();
         if(roomError)throw roomError;
@@ -1362,11 +1401,11 @@ async function saveScenarioSchedule(){
 
     scenarioEditingId=null;
     await refreshScenarioData();
-    alert("シナリオ予定を作成しました。");
+    showNotice("シナリオ予定を作成しました。");
     home(document.querySelector('[data-page="ホーム"]'));
   }catch(e){
     console.error(e);
-    alert("シナリオ予定の保存に失敗しました。Supabaseの権限設定を確認してください。");
+    showNotice("シナリオ予定の保存に失敗しました。Supabaseの権限設定を確認してください。");
   }
 }
 
@@ -1506,12 +1545,12 @@ function cancelScheduleApply(){
 }
 async function saveScenarioParticipant(){
   const s=scenarioSchedules.find(x=>x.id===scenarioApplyId);if(!s)return;
-  if(!currentUserId()){alert("Discordでログインしてください。");return}
+  if(!currentUserId()){showNotice("Discordでログインしてください。");return}
   const selectedCharacterId=document.getElementById("scheduleApplyCharacter").value;
   const characterName=selectedCharacterId ? (managedIacharaCharacters.find(c=>c.id===selectedCharacterId)?.character_name||"") : document.getElementById("scheduleApplyCharacterNew").value.trim();
   const iacharaUrl=document.getElementById("scheduleApplyIachara").value.trim();
   const other=document.getElementById("scheduleApplyOther").value.trim();
-  if(!characterName){alert("キャラクター名を入力してください。");return}
+  if(!characterName){showNotice("キャラクター名を入力してください。");return}
   const existing=participantOf(s);
   try{
     if(existing){
@@ -1520,7 +1559,7 @@ async function saveScenarioParticipant(){
       }).eq("scenario_id",s.id).eq("user_id",currentUserId());
       if(error)throw error;
     }else{
-      if(scheduleRemaining(s)<=0){alert("募集人数に空きがありません。");return}
+      if(scheduleRemaining(s)<=0){showNotice("募集人数に空きがありません。");return}
       const {error}=await supabaseClient.from("scenario_participants").insert({
         scenario_id:s.id,user_id:currentUserId(),user_name:currentUserName(),
         character_name:characterName,character_sheet_url:iacharaUrl||null,other:other||null,role:"pl",is_confirmed:false
@@ -1528,7 +1567,7 @@ async function saveScenarioParticipant(){
       if(error)throw error;
     }
     if(!selectedCharacterId && characterName && iacharaUrl && !managedIacharaCharacters.some(c=>!c.is_lost&&c.character_name===characterName&&c.iachara_url===iacharaUrl)){
-      if(confirm(`「${characterName}」をいあきゃら管理に保存しますか？`)){
+      if(await showConfirm(`「${characterName}」をいあきゃら管理に保存しますか？`)){
         const {data:charData,error:charError}=await supabaseClient.from("user_characters").insert({user_id:currentUserId(),character_name:characterName,iachara_url:iacharaUrl,is_lost:false}).select("*").single();
         if(charError)throw charError;
         managedIacharaCharacters.push(charData);
@@ -1536,18 +1575,18 @@ async function saveScenarioParticipant(){
     }
     await refreshScenarioData();
     refreshIacharaDropdown();
-    alert(existing?"参加内容を変更しました。":"シナリオへの参加希望を登録しました。");
+    showNotice(existing?"参加内容を変更しました。":"シナリオへの参加希望を登録しました。");
     await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
   }catch(e){
     console.error(e);
-    alert("参加情報の保存に失敗しました。Supabaseの権限設定を確認してください。");
+    showNotice("参加情報の保存に失敗しました。Supabaseの権限設定を確認してください。");
   }
 }
 async function joinAsSkp(id){
   const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
-  if(!currentUserId()){alert("Discordでログインしてください。");return}
-  if(!s.skpRecruit||s.status!=="recruiting"){alert("このシナリオではSKPを募集していません。");return}
-  if(participantOf(s)){alert("すでにこのシナリオへの参加希望が登録されています。");return}
+  if(!currentUserId()){showNotice("Discordでログインしてください。");return}
+  if(!s.skpRecruit||s.status!=="recruiting"){showNotice("このシナリオではSKPを募集していません。");return}
+  if(participantOf(s)){showNotice("すでにこのシナリオへの参加希望が登録されています。");return}
   try{
     const {error}=await supabaseClient.from("scenario_participants").insert({
       scenario_id:s.id,user_id:currentUserId(),user_name:currentUserName(),
@@ -1555,19 +1594,19 @@ async function joinAsSkp(id){
     });
     if(error)throw error;
     await refreshScenarioData();
-    alert("SKPとして参加希望を登録しました。");
+    showNotice("SKPとして参加希望を登録しました。");
     await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
   }catch(e){
     console.error(e);
-    alert("SKP参加希望の保存に失敗しました。Supabaseの権限設定を確認してください。");
+    showNotice("SKP参加希望の保存に失敗しました。Supabaseの権限設定を確認してください。");
   }
 }
 async function cancelOwnParticipation(id){
   const s=scenarioSchedules.find(x=>x.id===id);if(!s||s.status==="completed")return;
   const p=participantOf(s);
   if(!p)return;
-  if(!confirm(`「${s.title}」への参加を取り消しますか？`))return;
-  if(!confirm("参加情報は削除されます。取り消しを確定しますか？"))return;
+  if(!await showConfirm(`「${s.title}」への参加を取り消しますか？`))return;
+  if(!await showFinalConfirm("参加情報は削除されます。取り消しを確定しますか？"))return;
   try{
     const {error}=await supabaseClient.from("scenario_participants").delete().eq("scenario_id",id).eq("user_id",currentUserId());
     if(error)throw error;
@@ -1575,22 +1614,22 @@ async function cancelOwnParticipation(id){
     await scheduleJoinedPage(document.querySelector('[data-page="参加希望済みシナリオ"]'));
   }catch(e){
     console.error(e);
-    alert("参加の取り消しに失敗しました。");
+    showNotice("参加の取り消しに失敗しました。");
   }
 }
 async function markScenarioPlayed(id){
   const s=scenarioSchedules.find(x=>x.id===id);if(!s||!isScenarioOwner(s)||s.status!=="scheduled")return;
-  if(!confirm(`「${s.title}」をプレイ済みにしますか？\n作成者と参加者（PL・SKP）のプレイ済みシナリオに記録されます。`))return;
+  if(!await showConfirm(`「${s.title}」をプレイ済みにしますか？\n作成者と参加者（PL・SKP）のプレイ済みシナリオに記録されます。`))return;
   try{
     const {error}=await supabaseClient.from("scenarios").update({status:"completed"}).eq("id",id).eq("owner_id",currentUserId());
     if(error)throw error;
     await refreshScenarioData();
-    alert("プレイ済みシナリオに登録しました。");
+    showNotice("プレイ済みシナリオに登録しました。");
     renderScheduleManage();
     renderSchedulePlayed();
   }catch(e){
     console.error(e);
-    alert("プレイ済みへの変更に失敗しました。Supabaseの権限設定を確認してください。");
+    showNotice("プレイ済みへの変更に失敗しました。Supabaseの権限設定を確認してください。");
   }
 }
 function renderSchedulePlayed(){
@@ -1608,10 +1647,10 @@ async function schedulePlayedPage(btn){
 
 async function cancelScenarioParticipant(id,userId){
   const s=scenarioSchedules.find(x=>x.id===id);if(!s)return;
-  if(!isScenarioOwner(s)){alert("参加の取り消しは予定作成者のみ行えます。");return}
+  if(!isScenarioOwner(s)){showNotice("参加の取り消しは予定作成者のみ行えます。");return}
   const p=s.participants.find(x=>x.userId===userId);if(!p)return;
-  if(!confirm(`${p.userName}さんの参加を取り消しますか？`))return;
-  if(!confirm("参加情報が削除されます。取り消しを確定しますか？"))return;
+  if(!await showConfirm(`${p.userName}さんの参加を取り消しますか？`))return;
+  if(!await showFinalConfirm("参加情報が削除されます。取り消しを確定しますか？"))return;
   try{
     const {error}=await supabaseClient.from("scenario_participants").delete().eq("scenario_id",id).eq("user_id",userId);
     if(error)throw error;
@@ -1621,7 +1660,7 @@ async function cancelScenarioParticipant(id,userId){
     renderScheduleManage();renderHomeRecruit();
   }catch(e){
     console.error(e);
-    alert("参加者の取り消しに失敗しました。Supabaseの権限設定を確認してください。");
+    showNotice("参加者の取り消しに失敗しました。Supabaseの権限設定を確認してください。");
   }
 }
 function editScenarioSchedule(id){
@@ -1827,12 +1866,12 @@ async function finalizeScenarioDate(id){
   if(!s||!isScenarioOwner(s))return;
 
   if(s.status==="recruiting"&&!isScenarioCapacitySatisfied(s)){
-    alert("募集人数が条件を満たしていないため、日程を確定できません。");
+    showNotice("募集人数が条件を満たしていないため、日程を確定できません。");
     return;
   }
 
   if(!currentUserId()){
-    alert("Discordでログインしてください。");
+    showNotice("Discordでログインしてください。");
     return;
   }
 
@@ -1875,7 +1914,7 @@ async function saveFinalScenarioDate(){
   const scenario=scenarioSchedules.find(x=>x.id===dateFinalizeScenarioId);
   if(!scenario||!isScenarioOwner(scenario))return;
   if(scenario.status==="recruiting"&&!isScenarioCapacitySatisfied(scenario)){
-    alert("募集人数が条件を満たしていないため、日程を確定できません。");
+    showNotice("募集人数が条件を満たしていないため、日程を確定できません。");
     return;
   }
   const hour=document.getElementById("finalHour").value,minute=document.getElementById("finalMinute").value;
@@ -1892,11 +1931,11 @@ async function saveFinalScenarioDate(){
     await refreshScenarioData();
     const changed=scenario.status==="scheduled";
     dateFinalizeScenarioId=null;dateFinalizeSelectedDate="";
-    alert(changed?"日程を変更しました。":"日程を確定しました。");
+    showNotice(changed?"日程を変更しました。":"日程を確定しました。");
     scheduleManagePage(document.querySelector('[data-page="予定作成済みシナリオ"]'));
   }catch(e){
     console.error(e);
-    alert("日程の保存に失敗しました。Supabaseの権限設定を確認してください。");
+    showNotice("日程の保存に失敗しました。Supabaseの権限設定を確認してください。");
   }
 }
 
@@ -1966,7 +2005,7 @@ async function copyPalette(){
     btn.textContent="コピーしました";
     setTimeout(()=>btn.textContent=old,1200);
   }catch(e){
-    alert("コピーできませんでした。出力内容を選択してコピーしてください。");
+    showNotice("コピーできませんでした。出力内容を選択してコピーしてください。");
   }
 }
 
@@ -2395,7 +2434,7 @@ async function dcLoadFromSupabase(){
   }catch(e){
     console.error("Daycode load error:",e);
     daycodeReady=false;
-    alert("デイコードの読み込みに失敗しました。Supabaseのテーブルと権限設定を確認してください。");
+    showNotice("デイコードの読み込みに失敗しました。Supabaseのテーブルと権限設定を確認してください。");
   }
 }
 
@@ -2538,7 +2577,7 @@ async function dcOpenEditor(){
   const id=dcCurrentUserId();
 
   if(!id){
-    alert("Discordでログインしてください。");
+    showNotice("Discordでログインしてください。");
     return;
   }
 
@@ -2684,7 +2723,7 @@ async function dcSaveEditor(){
 
   }catch(e){
     console.error("Daycode save error:",e);
-    alert("デイコードの保存に失敗しました。Supabaseの権限設定を確認してください。");
+    showNotice("デイコードの保存に失敗しました。Supabaseの権限設定を確認してください。");
   }
 }
 
@@ -2703,7 +2742,7 @@ function dcCloseEditor(){
 async function dcAddNextMonth(){
   try{
     if(!dcCurrentUserId()){
-      alert("Discordでログインしてください。");
+      showNotice("Discordでログインしてください。");
       return;
     }
 
@@ -2721,7 +2760,7 @@ async function dcAddNextMonth(){
 
   }catch(e){
     console.error("Daycode month add error:",e);
-    alert("翌月分の追加に失敗しました。");
+    showNotice("翌月分の追加に失敗しました。");
   }
 }
 
@@ -2741,6 +2780,81 @@ supabaseClient.auth.onAuthStateChange(()=>{
     dcLoadFromSupabase();
   },0);
 });
+
+
+/* ===== 共通ダイアログ（alert / confirm / prompt の置換） ===== */
+let takulogDialogQueue=Promise.resolve();
+function takulogDialog(config){
+  const run=()=>new Promise(resolve=>{
+    const backdrop=document.getElementById("takulogDialogBackdrop");
+    const panel=document.getElementById("takulogDialog");
+    const title=document.getElementById("takulogDialogTitle");
+    const message=document.getElementById("takulogDialogMessage");
+    const actions=document.getElementById("takulogDialogActions");
+    const inputWrap=document.getElementById("takulogDialogInputWrap");
+    const input=document.getElementById("takulogDialogInput");
+    if(!backdrop||!panel||!title||!message||!actions||!inputWrap||!input){resolve(config.type==="confirm"?false:null);return;}
+    title.textContent=config.title||({notice:"お知らせ",confirm:"確認",prompt:"入力"}[config.type]||"確認");
+    message.textContent=String(config.message??"");
+    panel.classList.toggle("takulog-dialog-final",!!config.final);
+    inputWrap.hidden=config.type!=="prompt";
+    input.value=config.value??"";
+    input.placeholder=config.placeholder||"";
+    actions.replaceChildren();
+    let settled=false;
+    const finish=value=>{
+      if(settled)return;settled=true;
+      backdrop.classList.remove("open");backdrop.setAttribute("aria-hidden","true");
+      document.removeEventListener("keydown",onKey);
+      backdrop.removeEventListener("click",onBackdrop);
+      resolve(value);
+    };
+    const onKey=e=>{
+      if(e.key==="Escape"){e.preventDefault();finish(config.type==="confirm"?false:null);}
+      if(e.key==="Enter"&&config.type==="prompt"){e.preventDefault();finish(input.value);}
+    };
+    const onBackdrop=e=>{if(e.target===backdrop)finish(config.type==="confirm"?false:null);};
+    const button=(label,kind,value)=>{
+      const b=document.createElement("button");b.type="button";b.className="takulog-dialog-button takulog-dialog-"+kind;b.textContent=label;
+      b.addEventListener("click",()=>finish(typeof value==="function"?value():value));actions.appendChild(b);return b;
+    };
+    if(config.type==="confirm"||config.type==="prompt"){
+      button("キャンセル","cancel",config.type==="confirm"?false:null);
+      const primary=button(config.confirmLabel||(config.type==="prompt"?"決定":config.final?"実行する":"続ける"),"confirm",config.type==="confirm"?true:()=>input.value);
+      if(config.type==="prompt")primary.classList.add("takulog-dialog-confirm");
+    }else{
+      button(config.confirmLabel||"OK","ok",true);
+    }
+    backdrop.classList.add("open");backdrop.setAttribute("aria-hidden","false");
+    document.addEventListener("keydown",onKey);backdrop.addEventListener("click",onBackdrop);
+    const first= inputWrap.hidden ? actions.querySelector("button") : input;
+    (config.type==="confirm" ? actions.querySelector(".takulog-dialog-cancel") : first)?.focus();
+  });
+  const next=takulogDialogQueue.then(run,run);
+  takulogDialogQueue=next.then(()=>undefined,()=>undefined);
+  return next;
+}
+function showNotice(message,title){return takulogDialog({type:"notice",message,title});}
+function showConfirm(message,title){return takulogDialog({type:"confirm",message,title});}
+function showFinalConfirm(message,title){return takulogDialog({type:"confirm",message,title,final:true,confirmLabel:"実行する"});}
+function showPrompt(message,value="",title){return takulogDialog({type:"prompt",message,value,title});}
+
+/* ナビゲーション・日付選択などを除き、操作の意味に応じて配色を揃える */
+function applyTakulogButtonTones(root=document){
+  const skip=".nav button,.toggle,.close,.date-cell,.date-nav-button,.choice,.weekday,.date-judge-cell,.home-scenario-mark,.takulog-dialog-button,[disabled]";
+  root.querySelectorAll?.("button").forEach(btn=>{
+    if(btn.matches(skip)||btn.closest(".takulog-dialog-backdrop"))return;
+    const text=(btn.textContent||"").trim();
+    const action=btn.getAttribute("onclick")||"";
+    const cancel=/キャンセル|参加を取り消|取り消す|中止|戻る|削除|ロスト|クリア|閉じる/.test(text)||/cancelScheduleForm|cancelScheduleApply|cancelOwnParticipation|cancelScenarioParticipant|cancelScheduleForm|officialClear|dcCloseEditor/.test(action);
+    const positive=/保存|登録|更新|確定|作成|追加|実行|参加希望|プレイ済み|生成|読み込み|ログイン|決定|次へ|コピー/.test(text)||/saveScenario|saveFinal|dcSave|Generate|generatePalette|addIachara|addCocofolia|joinAsSkp|markScenarioPlayed|finalizeScenarioDate/.test(action);
+    btn.classList.toggle("action-cancel",cancel);
+    btn.classList.toggle("action-confirm",!cancel&&positive);
+  });
+}
+applyTakulogButtonTones();
+const takulogButtonObserver=new MutationObserver(()=>applyTakulogButtonTones());
+takulogButtonObserver.observe(document.body,{childList:true,subtree:true});
 
 </script>
 </body>
