@@ -1439,6 +1439,21 @@ async function deleteScenario(id){
   try{
     const {error}=await supabaseClient.from("scenarios").delete().eq("id",id).eq("owner_id",currentUserId());
     if(error)throw error;
+
+    // 削除成功後にDiscordへ通知する。通知失敗で削除処理全体を失敗扱いにしない。
+    try{
+      const {error:notifyError}=await supabaseClient.functions.invoke("discord-send",{
+        body:{
+          action:"scenario_deleted",
+          creator:scenario.ownerName||currentUserName(),
+          scenarioName:scenario.title||label
+        }
+      });
+      if(notifyError)throw notifyError;
+    }catch(notifyError){
+      console.error("Scenario deletion Discord notification error:",notifyError);
+    }
+
     scenarioSchedules=scenarioSchedules.filter(x=>x.id!==id);
     renderAllScenarioData();
     renderScheduleManage();
