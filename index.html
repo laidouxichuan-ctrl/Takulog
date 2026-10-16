@@ -321,7 +321,7 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.06)}
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.3.4</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.3.5</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -614,26 +614,23 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.06)}
   <div class="table-wrap"><table id="dc-table"></table></div>
   <section id="dc-editor" class="panel editor">
     <h2 id="dc-editorTitle"></h2>
-    <div class="actions editor-top-actions"><button class="primary-action palette-button" onclick="dcSaveEditor()">日程登録</button><button class="secondary-button" onclick="dcCloseEditor()">キャンセル</button></div>
+    <div class="actions editor-top-actions"><button class="secondary-button action-cancel" onclick="dcCloseEditor()">キャンセル</button><button class="primary-action palette-button action-confirm" onclick="dcSaveEditor()">日程登録</button></div>
     <div class="panel" style="background:#fafafa">
       <b>曜日一括入力</b>
       <div class="note">選択した曜日のすべての日付へ一括反映します。反映後、個別に変更できます。</div>
       <div id="dc-bulk" class="bulk"></div>
     </div>
     <div id="dc-days"></div>
-    <div class="actions"><button class="primary-action palette-button" onclick="dcSaveEditor()">日程登録</button><button class="secondary-button" onclick="dcCloseEditor()">キャンセル</button></div>
+    <div class="actions"><button class="secondary-button action-cancel" onclick="dcCloseEditor()">キャンセル</button><button class="primary-action palette-button action-confirm" onclick="dcSaveEditor()">日程登録</button></div>
   </section>
 </section>
 
 <div id="takulog-release-info" style="display:none;">
-Ver.1.3.4
-新機能
-・ブラウザ標準ダイアログに代わる卓ログ共通の確認・入力・通知画面を追加しました。
+Ver.1.3.5
 変更・改善
-・確定系統とキャンセル系統のボタン配色を統一し、操作の組み合わせではキャンセルを左、確定を右に配置しました。
-・ロスト確認文の改行表示を修正し、デイコードの日程確定ボタン配置と指定ボタンの配色を調整しました。
-・シナリオ削除機能を追加し、実行前に2段階確認を行うようにしました。
-・ロスト設定、ルーム削除、参加取り消しの最終確認を黒背景の専用ポップアップにしました。
+・デイコードの「自分の日程を入力」ボタンを青色に統一しました。
+・デイコードの日程編集画面で「キャンセル」を左、「日程登録」を右に配置しました。
+・デイコードの日程登録・キャンセルのボタン色を操作の意味に合わせて明示しました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
 </div>
@@ -2876,7 +2873,7 @@ function applyTakulogButtonTones(root=document){
     const text=(btn.textContent||"").trim();
     const action=btn.getAttribute("onclick")||"";
     const cancel=/キャンセル|参加を取り消|取り消す|中止|戻る|削除|ロスト|クリア|閉じる/.test(text)||/cancelScheduleForm|cancelScheduleApply|cancelOwnParticipation|cancelScenarioParticipant|cancelScheduleForm|officialClear|dcCloseEditor/.test(action);
-    const positive=/保存|登録|更新|確定|作成|追加|実行|参加希望|プレイ済み|生成|読み込み|ログイン|決定|次へ|コピー/.test(text)||/saveScenario|saveFinal|dcSave|Generate|generatePalette|addIachara|addCocofolia|joinAsSkp|markScenarioPlayed|finalizeScenarioDate/.test(action);
+    const positive=/自分の日程を入力|保存|登録|更新|確定|作成|追加|実行|参加希望|プレイ済み|生成|読み込み|ログイン|決定|次へ|コピー/.test(text)||/saveScenario|saveFinal|dcSave|Generate|generatePalette|addIachara|addCocofolia|joinAsSkp|markScenarioPlayed|finalizeScenarioDate/.test(action);
     btn.classList.toggle("action-cancel",cancel);
     btn.classList.toggle("action-confirm",!cancel&&positive);
   });
