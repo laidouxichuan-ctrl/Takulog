@@ -164,7 +164,11 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;back
 .date-time-selects{display:flex;align-items:end;gap:8px;margin:18px 0}
 .date-time-selects label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700}
 .date-time-selects select{min-width:100px;height:45px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;padding:0 12px;color:var(--text);font:inherit}
-.date-finalize-actions{justify-content:flex-end}
+.date-finalize-actions{justify-content:flex-end;flex-direction:row}
+.date-finalize-actions button:first-child{order:1}
+.date-finalize-actions button:last-child{order:2}
+button.action-neutral{background:#fff!important;color:#202630!important;border:1px solid #cfd6df!important;box-shadow:none!important}
+button.action-neutral:hover{background:#f7f9fc!important}
 @media(max-width:700px){
  .date-picker-head{align-items:stretch}.date-picker-head .date-nav-button,.date-picker-head .secondary-button{padding:9px 10px;font-size:12px}
  .date-picker-range{font-size:13px;display:flex;align-items:center;justify-content:center}
@@ -317,7 +321,7 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.06)}
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.3.3</div></div></div>
+<div class="brand"><img class="brand-icon" src="icon.jpeg" alt="卓ログ アイコン"><div><div class="brand-name">卓ログ</div><div class="brand-version">Ver.1.3.4</div></div></div>
 <button class="toggle" onclick="toggleSidebar()" aria-label="目次を拡大・縮小">‹</button>
 <nav class="nav">
 <button class="active" data-page="ホーム" onclick="home(this)"><span class="icon">⌂</span><span class="label">ホーム</span></button>
@@ -484,8 +488,8 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.06)}
       <label>分<select id="finalMinute"></select></label>
     </div>
     <div class="form-actions date-finalize-actions">
-      <button class="secondary-button" onclick="dateFinalizeBackToCalendar()">戻る</button>
-      <button class="primary palette-button" onclick="saveFinalScenarioDate()">確定</button>
+      <button class="secondary-button action-cancel" onclick="dateFinalizeBackToCalendar()">キャンセル</button>
+      <button class="primary palette-button action-confirm" onclick="saveFinalScenarioDate()">日程確定</button>
     </div>
   </div>
 </section>
@@ -540,7 +544,7 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.06)}
     <label for="officialInput">① いあきゃらのチャットパレット</label>
     <textarea id="officialInput" style="width:100%;min-height:220px;font-family:monospace;padding:10px;border:1px solid #dbe2eb;border-radius:9px;background:#fff;color:var(--text);resize:vertical" placeholder="全ての技能を出力、CCBを選択してチャパレ出力を行いここに貼り付けてください。"></textarea>
     <button class="primary palette-button" id="officialRead" onclick="officialReadSkills()">読み取り</button>
-    <button class="copy-button" style="display:inline-block;margin:8px 0 0 0" onclick="officialClear()">クリア</button>
+    <button class="action-neutral" style="display:inline-block;margin:8px 0 0 0;border-radius:8px;padding:9px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer" onclick="officialClear()">クリア</button>
     <p id="officialStatus"></p>
   </div>
   <div class="field-card" style="margin-top:14px">
@@ -600,8 +604,8 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.06)}
   <h2 class="section-title daycode-title">デイコード</h2>
   <section class="panel toolbar">
     <label>入力ユーザー：<span id="dc-user" class="dc-user-name">未ログイン</span></label>
-    <button class="primary-action palette-button" onclick="dcOpenEditor()">自分の日程を入力</button>
-    <button onclick="dcAddNextMonth()">翌月分を追加</button>
+    <button class="primary-action palette-button action-confirm" onclick="dcOpenEditor()">自分の日程を入力</button>
+    <button class="action-neutral" onclick="dcAddNextMonth()">翌月分を追加</button>
     <span id="dcStatus" class="dcStatus"></span>
   </section>
   <div class="daycode-note" style="margin:0 0 14px;padding:10px 12px;border:1px solid #dbe2eb;background:#f7f9fc;border-radius:8px;line-height:1.7;font-size:13px;">
@@ -622,11 +626,13 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.06)}
 </section>
 
 <div id="takulog-release-info" style="display:none;">
-Ver.1.3.3
+Ver.1.3.4
 新機能
 ・ブラウザ標準ダイアログに代わる卓ログ共通の確認・入力・通知画面を追加しました。
 変更・改善
 ・確定系統とキャンセル系統のボタン配色を統一し、操作の組み合わせではキャンセルを左、確定を右に配置しました。
+・ロスト確認文の改行表示を修正し、デイコードの日程確定ボタン配置と指定ボタンの配色を調整しました。
+・シナリオ削除機能を追加し、実行前に2段階確認を行うようにしました。
 ・ロスト設定、ルーム削除、参加取り消しの最終確認を黒背景の専用ポップアップにしました。
 </div>
 <footer class="footer"><button onclick="openLegal('terms')">利用規約</button>｜<button onclick="openLegal('privacy')">プライバシーポリシー</button></footer>
@@ -974,7 +980,7 @@ async function addIacharaCharacter(){
 async function markCharacterLost(id){
   const character=managedIacharaCharacters.find(x=>x.id===id);
   if(!character||character.is_lost)return;
-  if(!await showConfirm(`「${character.character_name||"このキャラクター"}」をロスト扱いにしますか？\\n以後、参加希望時の選択肢には表示されません。`))return;
+  if(!await showConfirm(`「${character.character_name||"このキャラクター"}」をロスト扱いにしますか？\n以後、参加希望時の選択肢には表示されません。`))return;
   if(!await showFinalConfirm("ロスト設定は元に戻せません。本当に実行しますか？"))return;
   try{
     const {error}=await supabaseClient.from("user_characters").update({is_lost:true,updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUserId());
@@ -1425,6 +1431,28 @@ function isScenarioCapacitySatisfied(s){
   return count>=min&&count<=max;
 }
 
+async function deleteScenario(id){
+  const scenario=scenarioSchedules.find(x=>x.id===id);
+  if(!scenario||!isScenarioOwner(scenario))return;
+  const label=scenario.title||"このシナリオ";
+  if(!await showConfirm(`「${label}」を削除しますか？\n参加者情報も削除される場合があります。`))return;
+  if(!await showFinalConfirm(`「${label}」を完全に削除します。この操作は元に戻せません。実行しますか？`))return;
+  try{
+    const {error}=await supabaseClient.from("scenarios").delete().eq("id",id).eq("owner_id",currentUserId());
+    if(error)throw error;
+    scenarioSchedules=scenarioSchedules.filter(x=>x.id!==id);
+    renderAllScenarioData();
+    renderScheduleManage();
+    renderJoinedSchedules();
+    renderSchedulePlayed();
+    showNotice("シナリオを削除しました。");
+  }catch(e){
+    console.error("Scenario delete error:",e);
+    showNotice("シナリオを削除できませんでした。権限設定または関連データを確認してください。");
+    await refreshScenarioData();
+  }
+}
+
 function renderScheduleCard(s,mode="home"){
   const owner=isScenarioOwner(s);
   const me=participantOf(s);
@@ -1470,6 +1498,7 @@ function renderScheduleCard(s,mode="home"){
       ${owner&&s.status==="recruiting"?(isScenarioCapacitySatisfied(s)?`<button class="primary-action" onclick="finalizeScenarioDate('${s.id}')">日程確定</button>`:`<button class="date-finalize-disabled" disabled title="募集人数が条件を満たしていません。">日程確定</button>`):""}
       ${owner&&s.status==="scheduled"?`<button class="primary-action" onclick="finalizeScenarioDate('${s.id}')">日程変更</button>`:""}
       ${owner&&s.status==="scheduled"?`<button class="primary-action" onclick="markScenarioPlayed('${s.id}')">プレイ済みにする</button>`:""}
+      ${owner?`<button class="danger-action" onclick="deleteScenario('${s.id}')">シナリオ削除</button>`:""}
     </div>
   </section>`;
 }
@@ -2841,7 +2870,7 @@ function showPrompt(message,value="",title){return takulogDialog({type:"prompt",
 
 /* ナビゲーション・日付選択などを除き、操作の意味に応じて配色を揃える */
 function applyTakulogButtonTones(root=document){
-  const skip=".nav button,.toggle,.close,.date-cell,.date-nav-button,.choice,.weekday,.date-judge-cell,.home-scenario-mark,.takulog-dialog-button,[disabled]";
+  const skip=".nav button,.toggle,.close,.date-cell,.date-nav-button,.choice,.weekday,.date-judge-cell,.home-scenario-mark,.takulog-dialog-button,.action-neutral,[disabled]";
   root.querySelectorAll?.("button").forEach(btn=>{
     if(btn.matches(skip)||btn.closest(".takulog-dialog-backdrop"))return;
     const text=(btn.textContent||"").trim();
