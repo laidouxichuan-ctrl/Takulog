@@ -319,6 +319,16 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.035)}
 .participant-row button{border-radius:9px!important;}
 
 </style>
+<style>
+.daycode-judgement.meeting-date-clickable{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;outline-offset:-3px}
+.daycode-judgement.meeting-date-clickable:hover,.daycode-judgement.meeting-date-clickable:focus{filter:brightness(.94);box-shadow:inset 0 0 0 2px #3187ed;outline:none}
+.meeting-inline-popover{position:fixed;z-index:10050;width:min(300px,calc(100vw - 24px));padding:14px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 12px 32px #17203330;color:#202630;text-align:left;white-space:normal}
+.meeting-inline-popover .meeting-popover-date{font-weight:750;margin-bottom:10px}
+.meeting-inline-popover label{display:block;font-size:13px;margin:0 0 5px}
+.meeting-inline-popover select{width:100%;min-height:40px;margin-bottom:12px}
+.meeting-inline-popover .meeting-popover-actions{display:flex;gap:8px;justify-content:flex-end}
+.meeting-inline-popover .meeting-popover-status{font-size:12px;color:#b42318;margin:0 0 8px;white-space:pre-wrap}
+</style>
 </head>
 <body>
 <div class="app">
@@ -615,13 +625,6 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.035)}
     ○：一日中いつでも暇　｜　△：時間帯が限られる（夜だけ、午前だけなど）　｜　×：一日中暇な時間がない
   </div>
   <div class="table-wrap"><table id="dc-table"></table></div>
-  <section id="meetingCreatePanel" class="panel" style="margin-top:14px;display:none">
-    <h3 style="margin-top:0">集会の予定を登録</h3>
-    <p class="note">判定が○または△の日付から選択してください。</p>
-    <div class="toolbar"><label for="meetingDate">開催予定日</label><select id="meetingDate"></select><label for="meetingType">種類</label><select id="meetingType"><option value="集会">集会</option><option value="ハウスルール会議">ハウスルール会議</option></select></div>
-    <div class="actions"><button class="secondary-button action-cancel" onclick="meetingResetForm()">キャンセル</button><button class="primary-action action-confirm" onclick="meetingCreate()">確定</button></div>
-    <div id="meetingCreateStatus" class="note" aria-live="polite"></div>
-  </section>
   <section id="dc-editor" class="panel editor">
     <h2 id="dc-editorTitle"></h2>
     <div class="actions editor-top-actions"><button class="secondary-button action-cancel" onclick="dcCloseEditor()">キャンセル</button><button class="primary-action palette-button action-confirm" onclick="dcSaveEditor()">日程登録</button></div>
@@ -2020,7 +2023,7 @@ function daycodePage(btn){
   activateNav(btn,"デイコード");
   showOnlySchedule("daycodePage");
   if(typeof dcRender==="function")dcRender();
-  const p=document.getElementById("meetingCreatePanel");if(p)p.style.display=isMeetingOwner()?"block":"none";meetingDateOptions();meetingLoad();
+  meetingClosePopover();meetingLoad();
 }
 function chatPalette(btn){
   activateNav(btn,"チャットパレット生成");
@@ -2322,20 +2325,31 @@ async function meetingLoad(){
   window.takulogMeetings=rows||[];buildCalendar();
 }
 function meetingFormatDate(s){const d=new Date(s+"T00:00:00");return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WD[d.getDay()]}）`}
-function meetingDateOptions(){
- const sel=document.getElementById("meetingDate");if(!sel)return;
- const eligible=(data.dates||[]).filter(d=>{const j=dcCalculateAllMembersJudgement(d);return j.status==="ok3"||j.status==="ok"||j.status==="maybe"});
- sel.innerHTML=eligible.map(d=>`<option value="${dcEsc(d)}">${dcEsc(meetingFormatDate(d))}</option>`).join("");
+let meetingInlineDate=null;
+function meetingClosePopover(){const old=document.getElementById("meetingInlinePopover");if(old)old.remove();meetingInlineDate=null;}
+function meetingOpenForDate(date){
+ if(!isMeetingOwner()){showNotice("集会を登録できるのは管理者のみです。");return}
+ const j=dcCalculateAllMembersJudgement(date);
+ if(!(j.status==="ok3"||j.status==="ok"||j.status==="maybe")){showNotice("総合判定が△以上の日付を選択してください。");return}
+ if(meetingInlineDate===date&&document.getElementById("meetingInlinePopover")){meetingClosePopover();return}
+ meetingClosePopover();meetingInlineDate=date;
+ const cell=[...document.querySelectorAll("#dc-table .daycode-judgement.meeting-date-clickable")].find(el=>el.getAttribute("aria-label")===`${dcDateText(date)}に集会を登録`);
+ const pop=document.createElement("div");pop.id="meetingInlinePopover";pop.className="meeting-inline-popover";pop.setAttribute("role","dialog");pop.setAttribute("aria-label","集会の日程登録");
+ pop.innerHTML=`<div class="meeting-popover-date">${dcEsc(meetingFormatDate(date))}</div><label for="meetingInlineType">種類</label><select id="meetingInlineType"><option value="集会">集会</option><option value="ハウスルール会議">ハウスルール会議</option></select><div id="meetingInlineStatus" class="meeting-popover-status" aria-live="polite"></div><div class="meeting-popover-actions"><button type="button" class="action-cancel" onclick="meetingClosePopover()">キャンセル</button><button type="button" class="action-confirm" onclick="meetingCreate()">確定</button></div>`;
+ document.body.appendChild(pop);
+ const r=cell?.getBoundingClientRect();const w=Math.min(300,window.innerWidth-24);let left=r?r.left:12;left=Math.max(12,Math.min(left,window.innerWidth-w-12));let top=r?r.bottom+6:100;if(top+pop.offsetHeight>window.innerHeight-12)top=Math.max(12,(r?r.top:100)-pop.offsetHeight-6);pop.style.left=`${left}px`;pop.style.top=`${top}px`;
+ const select=pop.querySelector("select");if(select)select.focus();
 }
-function meetingResetForm(){const s=document.getElementById("meetingCreateStatus");if(s)s.textContent="";}
+function meetingResetForm(){meetingClosePopover();}
 async function meetingCreate(){
  if(!isMeetingOwner()){showNotice("集会を登録できるのは管理者のみです。");return}
- const date=document.getElementById("meetingDate")?.value;const type=document.getElementById("meetingType")?.value;
- if(!date||!(["集会","ハウスルール会議"].includes(type))){showNotice("開催予定日と種類を選択してください。");return}
+ const date=meetingInlineDate;const type=document.getElementById("meetingInlineType")?.value;
+ if(!date||!( ["集会","ハウスルール会議"].includes(type))){showNotice("開催予定日と種類を選択してください。");return}
+ const status=document.getElementById("meetingInlineStatus");const confirmButton=document.querySelector("#meetingInlinePopover .meeting-popover-actions .action-confirm");if(confirmButton)confirmButton.disabled=true;
  const {data:{session}}=await supabaseClient.auth.getSession();
  const {data:result,error}=await supabaseClient.functions.invoke("discord-send",{body:{action:"meeting_create",meetingDate:date,meetingType:type},headers:session?.access_token?{Authorization:`Bearer ${session.access_token}`}:{}});
- if(error||!result?.ok){showNotice("集会の登録に失敗しました。"+(result?.error?`\n${result.error}`:""));return}
- await meetingLoad();meetingResetForm();showNotice("集会の予定を登録しました。");
+ if(error||!result?.ok){if(confirmButton)confirmButton.disabled=false;if(status)status.textContent="集会の登録に失敗しました。"+(result?.error?`\n${result.error}`:"");return}
+ meetingClosePopover();await meetingLoad();if(typeof dcRender==="function")dcRender();showNotice("集会の予定を登録しました。");
 }
 async function meetingManagePage(btn){
  if(!isMeetingOwner()){showNotice("このページを利用する権限がありません。");return}
@@ -2349,6 +2363,11 @@ function meetingOpenCancel(id){if(!isMeetingOwner())return;meetingCancelTarget=w
 function meetingCloseCancel(){meetingCancelTarget=null;document.getElementById("meetingCancelBackdrop").classList.remove("open")}
 function meetingCancelBackdrop(e){if(e.target.id==="meetingCancelBackdrop")meetingCloseCancel()}
 async function meetingConfirmCancel(){if(!isMeetingOwner()||!meetingCancelTarget)return;const target=meetingCancelTarget;const {data:{session}}=await supabaseClient.auth.getSession();const {data:result,error}=await supabaseClient.functions.invoke("discord-send",{body:{action:"meeting_cancel",meetingId:target.id},headers:session?.access_token?{Authorization:`Bearer ${session.access_token}`}:{}});if(error||!result?.ok){showNotice("取消に失敗しました。"+(result?.error?`\n${result.error}`:""));return}meetingCloseCancel();await meetingLoad();meetingRenderList();showNotice("集会の予定を取り消しました。");}
+
+
+document.addEventListener("click",function(e){const pop=document.getElementById("meetingInlinePopover");if(pop&&!pop.contains(e.target)&&!e.target.closest(".meeting-date-clickable"))meetingClosePopover();});
+window.addEventListener("resize",meetingClosePopover);
+window.addEventListener("scroll",function(e){if(document.getElementById("meetingInlinePopover")&&!e.target.closest?.("#meetingInlinePopover"))meetingClosePopover();},true);
 
 /* ===== Embedded Daycode : Supabase ===== */
 const WD=["日","月","火","水","木","金","土"];
@@ -2647,7 +2666,11 @@ function dcRender(){
       j.status==="no" ? "no" :
       "none";
 
-    h+=`<td class="daycode-judgement ${judgementClass}" title="${dcEsc(j.reason||"")}">${j.label}</td>`;
+    const meetingEligible = j.status==="ok3" || j.status==="ok" || j.status==="maybe";
+    const meetingClick = meetingEligible && isMeetingOwner()
+      ? ` onclick="meetingOpenForDate('${dcEsc(d)}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();meetingOpenForDate('${dcEsc(d)}')}" aria-label="${dcEsc(dcDateText(d))}に集会を登録"`
+      : "";
+    h+=`<td class="daycode-judgement ${judgementClass} ${meetingClick ? "meeting-date-clickable" : ""}" title="${dcEsc(j.reason||"")}${meetingEligible && isMeetingOwner() ? " / クリックして集会を登録" : ""}"${meetingClick}>${j.label}</td>`;
 
     data.members.forEach(m=>{
       const a=(data.answers[m.id]&&data.answers[m.id][d])||"";
@@ -2668,7 +2691,7 @@ function dcRender(){
   if(table){
     table.innerHTML=h+"</tbody>";
   }
-  if(typeof meetingDateOptions==="function")meetingDateOptions();
+  if(meetingInlineDate&&!document.getElementById("meetingInlinePopover"))meetingInlineDate=null;
 }
 
 /* ===== 自分の日程編集 ===== */
