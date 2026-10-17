@@ -333,6 +333,7 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.035)}
 <button data-page="プレイ済みシナリオ" onclick="placeholder(this)"><span class="icon">✓</span><span class="label">プレイ済みシナリオ</span></button>
 <button data-page="チャットパレット生成" onclick="chatPalette(this)"><span class="icon">▤</span><span class="label">チャットパレット生成</span></button>
 <button data-page="デイコード" onclick="daycodePage(this)"><span class="icon">▦</span><span class="label">デイコード</span></button>
+<button data-page="集会管理" id="meetingManageNav" onclick="meetingManagePage(this)" style="display:none"><span class="icon">♧</span><span class="label">集会管理</span></button>
 <button data-page="いあきゃら管理" onclick="iacharaManagePage(this)"><span class="icon">♙</span><span class="label">いあきゃら管理</span></button>
 <button data-page="ココフォリア管理" onclick="cocofoliaManagePage(this)"><span class="icon">▣</span><span class="label">ココフォリア管理</span></button>
 </nav>
@@ -614,6 +615,13 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.035)}
     ○：一日中いつでも暇　｜　△：時間帯が限られる（夜だけ、午前だけなど）　｜　×：一日中暇な時間がない
   </div>
   <div class="table-wrap"><table id="dc-table"></table></div>
+  <section id="meetingCreatePanel" class="panel" style="margin-top:14px;display:none">
+    <h3 style="margin-top:0">集会の予定を登録</h3>
+    <p class="note">判定が○または△の日付から選択してください。</p>
+    <div class="toolbar"><label for="meetingDate">開催予定日</label><select id="meetingDate"></select><label for="meetingType">種類</label><select id="meetingType"><option value="集会">集会</option><option value="ハウスルール会議">ハウスルール会議</option></select></div>
+    <div class="actions"><button class="secondary-button action-cancel" onclick="meetingResetForm()">キャンセル</button><button class="primary-action action-confirm" onclick="meetingCreate()">確定</button></div>
+    <div id="meetingCreateStatus" class="note" aria-live="polite"></div>
+  </section>
   <section id="dc-editor" class="panel editor">
     <h2 id="dc-editorTitle"></h2>
     <div class="actions editor-top-actions"><button class="secondary-button action-cancel" onclick="dcCloseEditor()">キャンセル</button><button class="primary-action palette-button action-confirm" onclick="dcSaveEditor()">日程登録</button></div>
@@ -627,6 +635,15 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.035)}
   </section>
 </section>
 
+<section class="card schedule-page" id="meetingManagePage" style="display:none">
+  <h2 class="section-title">集会管理</h2><div class="manage-intro">確定済みの集会予定を管理します。</div>
+  <div id="meetingManageList" class="manage-list"></div>
+</section>
+<div id="meetingCancelBackdrop" class="modal-backdrop" onclick="meetingCancelBackdrop(event)">
+  <div class="modal"><div class="modal-head"><h2>集会の予定取消</h2><button class="close" onclick="meetingCloseCancel()">×</button></div>
+  <div class="modal-body"><p>この集会の予定を取り消しますか？</p><p id="meetingCancelDetails"></p></div>
+  <div class="modal-foot"><button class="secondary-button action-cancel" onclick="meetingCloseCancel()">キャンセル</button><button class="primary-action action-confirm" onclick="meetingConfirmCancel()">予定を取り消す</button></div></div>
+</div>
 <div id="takulog-release-info" style="display:none;">
 Ver.1.3.5
 変更・改善
@@ -718,6 +735,7 @@ function discordUserFromSupabase(user){
 
 function renderAccount(user){
   const area=document.getElementById("accountArea");
+  const meetingNav=document.getElementById("meetingManageNav"); if(meetingNav) meetingNav.style.display=(discordUserFromSupabase(user)?.id===MEETING_OWNER_DISCORD_ID?"flex":"none");
   if(!area)return;
 
   if(!user){
@@ -1233,7 +1251,7 @@ async function scenarioSave(){
 }
 
 function showOnlySchedule(id){
-  const ids=["scheduleCreatePage","scheduleManagePage","scheduleApplyPage","scheduleJoinedPage","schedulePlayedPage","iacharaManagePage","cocofoliaManagePage","chatPaletteOutputPage","palettePage","daycodePage","scheduleDateFinalizePage"];
+  const ids=["scheduleCreatePage","scheduleManagePage","scheduleApplyPage","scheduleJoinedPage","schedulePlayedPage","iacharaManagePage","cocofoliaManagePage","chatPaletteOutputPage","palettePage","daycodePage","scheduleDateFinalizePage","meetingManagePage"];
   ids.forEach(x=>{const e=document.getElementById(x);if(e)e.style.display=(x===id?"block":"none")});
   document.getElementById("homeRecruit").style.display="none";
   document.getElementById("homeTodayScenarios").style.display="none";
@@ -2002,6 +2020,7 @@ function daycodePage(btn){
   activateNav(btn,"デイコード");
   showOnlySchedule("daycodePage");
   if(typeof dcRender==="function")dcRender();
+  const p=document.getElementById("meetingCreatePanel");if(p)p.style.display=isMeetingOwner()?"block":"none";meetingDateOptions();meetingLoad();
 }
 function chatPalette(btn){
   activateNav(btn,"チャットパレット生成");
@@ -2270,6 +2289,9 @@ function buildCalendar(){
   if(d.getDay()==0)x.classList.add("sun");
   if(d.getDay()==6)x.classList.add("sat");
   x.innerHTML='<span class="num">'+d.getDate()+'</span>';
+  (window.takulogMeetings||[]).filter(m=>m.meeting_date===ymd).forEach(m=>{
+    const mark=document.createElement("div");mark.className="home-scenario-mark";mark.style.background="#e9e4ff";mark.style.color="#5138a6";mark.textContent=m.meeting_type;mark.title=m.meeting_type; x.appendChild(mark);
+  });
   homeScenarioListForDate(ymd).forEach(s=>{
     const mark=document.createElement("button");
     mark.type="button";mark.className="home-scenario-mark";
@@ -2287,6 +2309,46 @@ document.addEventListener("DOMContentLoaded",async()=>{
   if(sessionData?.session?.user)await refreshUserProfiles(sessionData.session.user);
   await refreshScenarioData();
 });
+
+
+/* ===== 集会管理（サイレント追加） ===== */
+const MEETING_OWNER_DISCORD_ID="1088073695114825819";
+window.takulogMeetings=[];
+let meetingCancelTarget=null;
+function isMeetingOwner(){return currentUserId()===MEETING_OWNER_DISCORD_ID}
+async function meetingLoad(){
+  const {data:rows,error}=await supabaseClient.from("takulog_meetings").select("id,meeting_date,meeting_type,created_at").order("meeting_date",{ascending:true});
+  if(error){console.warn("Meeting list unavailable:",error.message);window.takulogMeetings=[];return}
+  window.takulogMeetings=rows||[];buildCalendar();
+}
+function meetingFormatDate(s){const d=new Date(s+"T00:00:00");return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WD[d.getDay()]}）`}
+function meetingDateOptions(){
+ const sel=document.getElementById("meetingDate");if(!sel)return;
+ const eligible=(data.dates||[]).filter(d=>{const j=dcCalculateAllMembersJudgement(d);return j.status==="ok3"||j.status==="ok"||j.status==="maybe"});
+ sel.innerHTML=eligible.map(d=>`<option value="${dcEsc(d)}">${dcEsc(meetingFormatDate(d))}</option>`).join("");
+}
+function meetingResetForm(){const s=document.getElementById("meetingCreateStatus");if(s)s.textContent="";}
+async function meetingCreate(){
+ if(!isMeetingOwner()){showNotice("集会を登録できるのは管理者のみです。");return}
+ const date=document.getElementById("meetingDate")?.value;const type=document.getElementById("meetingType")?.value;
+ if(!date||!(["集会","ハウスルール会議"].includes(type))){showNotice("開催予定日と種類を選択してください。");return}
+ const {data:{session}}=await supabaseClient.auth.getSession();
+ const {data:result,error}=await supabaseClient.functions.invoke("discord-send",{body:{action:"meeting_create",meetingDate:date,meetingType:type},headers:session?.access_token?{Authorization:`Bearer ${session.access_token}`}:{}});
+ if(error||!result?.ok){showNotice("集会の登録に失敗しました。"+(result?.error?`\n${result.error}`:""));return}
+ await meetingLoad();meetingResetForm();showNotice("集会の予定を登録しました。");
+}
+async function meetingManagePage(btn){
+ if(!isMeetingOwner()){showNotice("このページを利用する権限がありません。");return}
+ activateNav(btn,"集会管理");showOnlySchedule("meetingManagePage");await meetingLoad();meetingRenderList();
+}
+function meetingRenderList(){const box=document.getElementById("meetingManageList");if(!box)return;
+ if(!window.takulogMeetings.length){box.innerHTML='<div class="empty">確定済みの集会はありません。</div>';return}
+ box.innerHTML=window.takulogMeetings.map(m=>`<div class="manage-item" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)"><div><b>${dcEsc(m.meeting_type)}</b><div class="note">開催予定日：${dcEsc(meetingFormatDate(m.meeting_date))}</div></div><button class="action-cancel" onclick="meetingOpenCancel('${dcEsc(m.id)}')">予定取消</button></div>`).join("");
+}
+function meetingOpenCancel(id){if(!isMeetingOwner())return;meetingCancelTarget=window.takulogMeetings.find(m=>String(m.id)===String(id));if(!meetingCancelTarget)return;document.getElementById("meetingCancelDetails").textContent=`${meetingCancelTarget.meeting_type}\n開催予定日：${meetingFormatDate(meetingCancelTarget.meeting_date)}`;document.getElementById("meetingCancelBackdrop").classList.add("open")}
+function meetingCloseCancel(){meetingCancelTarget=null;document.getElementById("meetingCancelBackdrop").classList.remove("open")}
+function meetingCancelBackdrop(e){if(e.target.id==="meetingCancelBackdrop")meetingCloseCancel()}
+async function meetingConfirmCancel(){if(!isMeetingOwner()||!meetingCancelTarget)return;const target=meetingCancelTarget;const {data:{session}}=await supabaseClient.auth.getSession();const {data:result,error}=await supabaseClient.functions.invoke("discord-send",{body:{action:"meeting_cancel",meetingId:target.id},headers:session?.access_token?{Authorization:`Bearer ${session.access_token}`}:{}});if(error||!result?.ok){showNotice("取消に失敗しました。"+(result?.error?`\n${result.error}`:""));return}meetingCloseCancel();await meetingLoad();meetingRenderList();showNotice("集会の予定を取り消しました。");}
 
 /* ===== Embedded Daycode : Supabase ===== */
 const WD=["日","月","火","水","木","金","土"];
@@ -2606,6 +2668,7 @@ function dcRender(){
   if(table){
     table.innerHTML=h+"</tbody>";
   }
+  if(typeof meetingDateOptions==="function")meetingDateOptions();
 }
 
 /* ===== 自分の日程編集 ===== */
