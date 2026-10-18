@@ -327,6 +327,11 @@ button.action-confirm:hover,button.action-cancel:hover{filter:brightness(1.035)}
 .meeting-inline-popover label{display:block;font-size:13px;margin:0 0 5px}
 .meeting-inline-popover select{width:100%;min-height:40px;margin-bottom:12px}
 .meeting-inline-popover .meeting-popover-actions{display:flex;gap:8px;justify-content:flex-end}
+/* 集会機能の操作ボタンも卓ログ共通の丸角・色に統一 */
+.meeting-inline-popover .meeting-popover-actions button, #meetingManageList button.danger-action{border-radius:9px!important;min-height:40px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer}
+#meetingManageList button.danger-action{background:linear-gradient(110deg,#f08087 0%,#dc454f 58%,#c93440 100%)!important;border:1px solid #dc454f!important;color:#fff!important;box-shadow:0 3px 8px #dc26261a!important}
+#meetingManageList button.danger-action:hover{filter:brightness(1.035)}
+.meeting-inline-popover .meeting-popover-actions button.action-confirm{border-radius:9px!important}
 .meeting-inline-popover .meeting-popover-status{font-size:12px;color:#b42318;margin:0 0 8px;white-space:pre-wrap}
 </style>
 </head>
@@ -2358,20 +2363,17 @@ function meetingRenderList(){const box=document.getElementById("meetingManageLis
  if(!window.takulogMeetings.length){box.innerHTML='<div class="empty">確定済みの集会はありません。</div>';return}
  box.innerHTML=window.takulogMeetings.map(m=>`<div class="manage-item" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)"><div><b>${dcEsc(m.meeting_type)}</b><div class="note">開催予定日：${dcEsc(meetingFormatDate(m.meeting_date))}</div></div><button class="danger-action action-cancel" onclick="meetingOpenCancel('${dcEsc(m.id)}')">予定取消</button></div>`).join("");
 }
-function meetingOpenCancel(id){if(!isMeetingOwner())return;meetingCancelTarget=window.takulogMeetings.find(m=>String(m.id)===String(id));if(!meetingCancelTarget)return;document.getElementById("meetingCancelDetails").textContent=`${meetingCancelTarget.meeting_type}\n開催予定日：${meetingFormatDate(meetingCancelTarget.meeting_date)}`;document.getElementById("meetingCancelBackdrop").classList.add("open")}
-function meetingCloseCancel(){meetingCancelTarget=null;document.getElementById("meetingCancelBackdrop").classList.remove("open")}
-function meetingCancelBackdrop(e){if(e.target.id==="meetingCancelBackdrop")meetingCloseCancel()}
-async function meetingConfirmCancel(){
- if(!isMeetingOwner()||!meetingCancelTarget)return;
- const target=meetingCancelTarget;
+async function meetingOpenCancel(id){
+ if(!isMeetingOwner())return;
+ const target=window.takulogMeetings.find(m=>String(m.id)===String(id));if(!target)return;
  const details=`${target.meeting_type}\n開催予定日：${meetingFormatDate(target.meeting_date)}`;
- // 卓ログ既存の削除UIと同じ、通常確認→最終確認の二段階確認
+ // 余分な独自モーダルを挟まず、卓ログ既存の削除UI（二段階確認）を直接表示
  if(!await showConfirm(`この集会の予定を取り消しますか？\n\n${details}`))return;
  if(!await showFinalConfirm(`${details}\n\nこの操作は元に戻せません。予定の取消を確定しますか？`))return;
  const {data:{session}}=await supabaseClient.auth.getSession();
  const {data:result,error}=await supabaseClient.functions.invoke("discord-send",{body:{action:"meeting_cancel",meetingId:target.id},headers:session?.access_token?{Authorization:`Bearer ${session.access_token}`}:{}});
  if(error||!result?.ok){showNotice("取消に失敗しました。"+(result?.error?`\n${result.error}`:""));return}
- meetingCloseCancel();await meetingLoad();meetingRenderList();showNotice("集会の予定を取り消しました。");
+ await meetingLoad();meetingRenderList();showNotice("集会の予定を取り消しました。");
 }
 
 
