@@ -2330,12 +2330,11 @@ function meetingClosePopover(){const old=document.getElementById("meetingInlineP
 function meetingOpenForDate(date){
  if(!isMeetingOwner()){showNotice("集会を登録できるのは管理者のみです。");return}
  const j=dcCalculateAllMembersJudgement(date);
- if(!(j.status==="ok3"||j.status==="ok"||j.status==="maybe")){showNotice("総合判定が△以上の日付を選択してください。");return}
  if(meetingInlineDate===date&&document.getElementById("meetingInlinePopover")){meetingClosePopover();return}
  meetingClosePopover();meetingInlineDate=date;
  const cell=[...document.querySelectorAll("#dc-table .daycode-judgement.meeting-date-clickable")].find(el=>el.getAttribute("aria-label")===`${dcDateText(date)}に集会を登録`);
  const pop=document.createElement("div");pop.id="meetingInlinePopover";pop.className="meeting-inline-popover";pop.setAttribute("role","dialog");pop.setAttribute("aria-label","集会の日程登録");
- pop.innerHTML=`<div class="meeting-popover-date">${dcEsc(meetingFormatDate(date))}</div><label for="meetingInlineType">種類</label><select id="meetingInlineType"><option value="集会">集会</option><option value="ハウスルール会議">ハウスルール会議</option></select><div id="meetingInlineStatus" class="meeting-popover-status" aria-live="polite"></div><div class="meeting-popover-actions"><button type="button" class="action-cancel" onclick="meetingClosePopover()">キャンセル</button><button type="button" class="action-confirm" onclick="meetingCreate()">確定</button></div>`;
+ pop.innerHTML=`<div class="meeting-popover-date">${dcEsc(meetingFormatDate(date))}</div><label for="meetingInlineType">種類</label><select id="meetingInlineType"><option value="集会">集会</option><option value="ハウスルール会議">ハウスルール会議</option></select><div id="meetingInlineStatus" class="meeting-popover-status" aria-live="polite"></div><div class="meeting-popover-actions"><button type="button" class="secondary-button action-cancel" onclick="meetingClosePopover()">キャンセル</button><button type="button" class="primary-action palette-button action-confirm" onclick="meetingCreate()">確定</button></div>`;
  document.body.appendChild(pop);
  const r=cell?.getBoundingClientRect();const w=Math.min(300,window.innerWidth-24);let left=r?r.left:12;left=Math.max(12,Math.min(left,window.innerWidth-w-12));let top=r?r.bottom+6:100;if(top+pop.offsetHeight>window.innerHeight-12)top=Math.max(12,(r?r.top:100)-pop.offsetHeight-6);pop.style.left=`${left}px`;pop.style.top=`${top}px`;
  const select=pop.querySelector("select");if(select)select.focus();
@@ -2357,12 +2356,23 @@ async function meetingManagePage(btn){
 }
 function meetingRenderList(){const box=document.getElementById("meetingManageList");if(!box)return;
  if(!window.takulogMeetings.length){box.innerHTML='<div class="empty">確定済みの集会はありません。</div>';return}
- box.innerHTML=window.takulogMeetings.map(m=>`<div class="manage-item" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)"><div><b>${dcEsc(m.meeting_type)}</b><div class="note">開催予定日：${dcEsc(meetingFormatDate(m.meeting_date))}</div></div><button class="action-cancel" onclick="meetingOpenCancel('${dcEsc(m.id)}')">予定取消</button></div>`).join("");
+ box.innerHTML=window.takulogMeetings.map(m=>`<div class="manage-item" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)"><div><b>${dcEsc(m.meeting_type)}</b><div class="note">開催予定日：${dcEsc(meetingFormatDate(m.meeting_date))}</div></div><button class="danger-action action-cancel" onclick="meetingOpenCancel('${dcEsc(m.id)}')">予定取消</button></div>`).join("");
 }
 function meetingOpenCancel(id){if(!isMeetingOwner())return;meetingCancelTarget=window.takulogMeetings.find(m=>String(m.id)===String(id));if(!meetingCancelTarget)return;document.getElementById("meetingCancelDetails").textContent=`${meetingCancelTarget.meeting_type}\n開催予定日：${meetingFormatDate(meetingCancelTarget.meeting_date)}`;document.getElementById("meetingCancelBackdrop").classList.add("open")}
 function meetingCloseCancel(){meetingCancelTarget=null;document.getElementById("meetingCancelBackdrop").classList.remove("open")}
 function meetingCancelBackdrop(e){if(e.target.id==="meetingCancelBackdrop")meetingCloseCancel()}
-async function meetingConfirmCancel(){if(!isMeetingOwner()||!meetingCancelTarget)return;const target=meetingCancelTarget;const {data:{session}}=await supabaseClient.auth.getSession();const {data:result,error}=await supabaseClient.functions.invoke("discord-send",{body:{action:"meeting_cancel",meetingId:target.id},headers:session?.access_token?{Authorization:`Bearer ${session.access_token}`}:{}});if(error||!result?.ok){showNotice("取消に失敗しました。"+(result?.error?`\n${result.error}`:""));return}meetingCloseCancel();await meetingLoad();meetingRenderList();showNotice("集会の予定を取り消しました。");}
+async function meetingConfirmCancel(){
+ if(!isMeetingOwner()||!meetingCancelTarget)return;
+ const target=meetingCancelTarget;
+ const details=`${target.meeting_type}\n開催予定日：${meetingFormatDate(target.meeting_date)}`;
+ // 卓ログ既存の削除UIと同じ、通常確認→最終確認の二段階確認
+ if(!await showConfirm(`この集会の予定を取り消しますか？\n\n${details}`))return;
+ if(!await showFinalConfirm(`${details}\n\nこの操作は元に戻せません。予定の取消を確定しますか？`))return;
+ const {data:{session}}=await supabaseClient.auth.getSession();
+ const {data:result,error}=await supabaseClient.functions.invoke("discord-send",{body:{action:"meeting_cancel",meetingId:target.id},headers:session?.access_token?{Authorization:`Bearer ${session.access_token}`}:{}});
+ if(error||!result?.ok){showNotice("取消に失敗しました。"+(result?.error?`\n${result.error}`:""));return}
+ meetingCloseCancel();await meetingLoad();meetingRenderList();showNotice("集会の予定を取り消しました。");
+}
 
 
 document.addEventListener("click",function(e){const pop=document.getElementById("meetingInlinePopover");if(pop&&!pop.contains(e.target)&&!e.target.closest(".meeting-date-clickable"))meetingClosePopover();});
@@ -2666,11 +2676,10 @@ function dcRender(){
       j.status==="no" ? "no" :
       "none";
 
-    const meetingEligible = j.status==="ok3" || j.status==="ok" || j.status==="maybe";
-    const meetingClick = meetingEligible && isMeetingOwner()
+    const meetingClick = isMeetingOwner()
       ? ` onclick="meetingOpenForDate('${dcEsc(d)}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();meetingOpenForDate('${dcEsc(d)}')}" aria-label="${dcEsc(dcDateText(d))}に集会を登録"`
       : "";
-    h+=`<td class="daycode-judgement ${judgementClass} ${meetingClick ? "meeting-date-clickable" : ""}" title="${dcEsc(j.reason||"")}${meetingEligible && isMeetingOwner() ? " / クリックして集会を登録" : ""}"${meetingClick}>${j.label}</td>`;
+    h+=`<td class="daycode-judgement ${judgementClass} ${meetingClick ? "meeting-date-clickable" : ""}" title="${dcEsc(j.reason||"")}${isMeetingOwner() ? " / クリックして集会を登録" : ""}"${meetingClick}>${j.label}</td>`;
 
     data.members.forEach(m=>{
       const a=(data.answers[m.id]&&data.answers[m.id][d])||"";
